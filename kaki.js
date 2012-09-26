@@ -23,6 +23,19 @@ Meteor.methods({
 
 
 if (Meteor.is_client) {
+    regit = function(re, str) {
+	var arr = [];
+	var match = null;
+	while (match = re.exec(str)) {
+	    var obj = {};
+	    for (var grp = 1; grp < match.length; grp++) {
+		obj[grp] = match[grp];
+	    }
+	    arr.push(obj);
+	}
+	return arr;
+    };
+
     window.marks = [];
     Meteor.subscribe("hooky", function() {
 			 var theone = dbalbums.findOne({key: window.getkey()});
@@ -31,6 +44,118 @@ if (Meteor.is_client) {
 			 }
 		     });
 
+    window.tracks = {};
+
+    window.getTracks = function(album, artist, article, cb) {
+	if (!article) {
+	    $.getJSON('http://en.wikipedia.org/w/api.php?action=query&list=search&srsearch='
+		      + encodeURIComponent(album + ' album ' + (artist === album ? '' : artist)) +
+		      '&format=json&callback=?', function(srch) {
+			  var thearticle = srch.query.search[0].title;
+			  article = thearticle;
+			  if (window.clean(thearticle).indexOf(window.clean(album)) === -1 &&
+			      window.clean(album).indexOf(window.clean(thearticle)) === -1) {
+			      
+			      thearticle = null; 
+			      var oknomore = false;
+			      $.each(srch.query.search, function(i, sr) {
+					 if ((window.clean(sr.title).indexOf(window.clean(album)) !== -1 ||
+					      window.clean(album).indexOf(window.clean(sr.title)) !== -1) && !oknomore) {
+					     article = thearticle = sr.title;
+					     oknomore = true;
+					 }
+				     });
+			  }
+			  getTracks(album, album, article, cb);
+		      });
+	}
+	else {
+	    $.getJSON('http://en.wikipedia.org/w/api.php?action=query&prop=revisions&titles=' + article + '&rvprop=timestamp|user|comment|content&format=json&callback=?', function(e) {
+		      if (!Object.keys(e.query.pages) || !e.query.pages[Object.keys(e.query.pages)[0]].revisions) {
+			  return;
+		      }
+		      var xx = e.query.pages[Object.keys(e.query.pages)[0]].revisions[0]['*'];
+
+		      var alb = {};
+
+		      //var tracks = regit(/(\W*?)([\w|\s]*?)(\W*?)(\d{1,2}:\d{1,2})/gim, xx);
+		      var tracks = [];
+
+		      tracks = regit(/title\d+.*?=\s*(.*?)\|length/gim, xx);
+
+		      if (tracks.length <= 1) {
+			  tracks = regit(/title\d.*?=.(.*?)$/gim, xx);
+		      }
+
+		      if (tracks.length <= 1) {
+			  //tracks = regit(/[^a-zA-Z0-9\[\]]*([a-zA-Z\s'0-9\(\),\[\]\\/|]*)([^a-zA-Z\s'0-9\(\),\[\/\]\|].*?)\d:\d{2}/gim, xx);
+			  
+			  tracks = regit(/#\s"(.*?)"\s.*?\d:\d{2}/gim, xx);
+		      }
+
+
+			  if (tracks.length <= 1) {
+			      tracks = regit(/#."(.*?)".\d:\d{1,2}/gim, xx);
+			  }
+			  
+
+		      if (tracks.length <= 1) {
+			  tracks = regit(/#(.*?)\d:\d{1,2}/gim, xx);
+		      }
+		      
+		      if (tracks.length <= 1) { 
+			  var theindex = xx.indexOf('==Track');
+			  if (tracks.length <= 1) {
+			      tracks = regit(/#.*?\"(.*?)\"/gim, xx);
+			  }
+			  if (tracks.length <= 1) {
+			      tracks = regit(/#\s*(.*?)\n/gim, xx);
+			  }
+			  if (tracks.length <= 1) {
+			      tracks = regit(/\n.\s(.*?)[^a-zA-Z0-9\s]/gim, xx.substr(theindex));
+			  }
+
+		      }
+	debugger;
+		      realTracks = [];
+
+		      $.each(tracks, function(i, obj) {
+				 var thename = obj['1'];
+				 if (thename.indexOf('[[') != -1) {
+				     thename = thename
+					 .split('|').splice(-1)[0].trim(']]');
+
+				 }
+				 
+				 var theartist = artist.trim(' ');
+
+				 try {
+				     thename = thename.isASCII() ? thename : thename.deaccent();
+				     theartist = theartist.isASCII() ? theartist : theartist.deaccent();
+				 } catch (x) {
+
+				 }
+				 realTracks.push({
+						     name: thename,
+						     artist: {
+							 name: theartist
+						     },
+						     album: album
+						 });
+			     });
+
+			  thetracks = {};
+			  for (var i = 0; i < realTracks.length; i++) {
+			      thetracks[window.clean(realTracks[i].name)] = realTracks[i].name;
+			      if (realTracks[i + 1]) {
+				  thetracks[window.clean(realTracks[i].name)] = realTracks[i + 1].name;	  
+			      }
+			  }
+			  
+			  cb(thetracks);
+		  });
+	}
+    };
     window.getLyrics = function(artist, song, next) {
 	$.getJSON('http://apitutapi.appspot.com/lylo?url=http://www.lyricsmania.com/' +
 		  window.clearics(song) +
@@ -96,8 +221,7 @@ if (Meteor.is_client) {
 
 
     window.clean = function(s) {
-	return s.toLowerCase().replace(/the|and/gim,'').replace(/part/gim,'pt')
-	    .replace(/[^a-zA-Z0-9]/gim,'').replace('around', 'round').trim(' ');
+	return s.toLowerCase().replace(/[^a-zA-Z0-9]/gim,'').trim(' ');
 
     };
 
@@ -108,25 +232,28 @@ if (Meteor.is_client) {
 
 
     window.getkey = function(){
+	if (!window.artist) {
+	    return '';
+	}
+
+
 	return window.clean(artist) + '_' + window.clean(song);
     };
 
     window.getsong = function(artist, song){
 	getLyrics(window.artist, window.song, function(lyrics) {
 		      $.when.apply($, fetchFromPipe(window.artist, window.song)).done(function(res) {
-												    var tube = 'http://www.youtube.com/watch?v=' + JSON.parse(res).id; 
+											  var tube = 'http://www.youtube.com/watch?v=' + JSON.parse(res).id; 
+											  Meteor.call('saveAlbum', {key: window.getkey(), 
+														    album: window.album,
+														    artist: window.artist,
+														    song: window.song,
+														    lyrics: $(lyrics).text(),
+														    tube: tube},
 
-
-												    Meteor.call('saveAlbum', {key: window.getkey(), 
-															      album: window.album,
-															      artist: window.artist,
-															      song: window.song,
-															      lyrics: $(lyrics).text(),
-															      tube: tube},
-
-														function(e, curs) {		
-														    console.log('saved', arguments);
-														});
+												      function(e, curs) {		
+													  console.log('saved', arguments);
+												      });
 											  
 										      });
 		  });
@@ -151,7 +278,11 @@ if (Meteor.is_client) {
 						       window.artist = decodeURIComponent(artist);
 						       window.album = decodeURIComponent(album);
 						       window.song = decodeURIComponent(song);
+						       window.mode = what;
 						       window[what](artist, album, song);   
+						       getTracks(album, artist, undefined, function(tz){
+								     window.tracks = tz;
+								 });
 						   }
 					       } 
 
@@ -181,16 +312,19 @@ if (Meteor.is_client) {
 		   },0);
     };
 
-   Template.marks.marks = function () {
-       var xxx = dbalbums.findOne({key: window.getkey()});
-       setTimeout(function(){
-		      pop.done(function(){
-				   $.each(xxx.marks, function(i, mrk) {
-					      window.popcorn = popcorn.subtitle(mrk);
-					  });
-			       });
-		  },0);
-       return xxx.marks;
+    Template.marks.marks = function () {
+	var xxx = dbalbums.findOne({key: window.getkey()});
+	setTimeout(function(){
+		       pop.done(function(){
+				    if (xxx.marks) {
+					window.marks = xxx.marks;
+					$.each(xxx.marks, function(i, mrk) {
+						   window.popcorn = popcorn.subtitle(mrk);
+					       });
+				    }
+				});
+		   },0);
+	return xxx.marks;
     };
 
     Template.main.mode = function () {
@@ -205,7 +339,7 @@ if (Meteor.is_client) {
     window.lastplace = 0;
     window.lasttime = 0;
     Template.marks.events = {
-	'click .alert button': function(){
+	'click .alert button': function() {
 	    
 	}
     };
@@ -215,8 +349,8 @@ if (Meteor.is_client) {
             var thistime = window.popcorn.currentTime();
             var subs = $('.lyrics').text().substring(window.lastplace, thisplace);
             var mark = {
-                start: Math.max(0, window.lasttime - 1),
-                end: Math.max(0, thistime - 1),
+                start: Math.max(0, window.lasttime - 1.4),
+                end: Math.max(0, thistime - 1.4),
                 text: '...' + subs
             };
             window.marks.push(mark);
@@ -247,6 +381,15 @@ if (Meteor.is_client) {
 			    console.log('saved', arguments);
 			    window.popcorn = Popcorn.youtube("#video", alb.tube);
 			});
+	},
+	'click #next' : function () {
+	    var next = window.tracks[window.clean(window.song)];
+	   location.href = '/' + 
+				window.mode + '/' + 
+				encodeURIComponent(window.artist) + '/' +
+				encodeURIComponent(window.album) + '/' + 
+				encodeURIComponent(next),
+				{ trigger: true };
 	}
 
     };
