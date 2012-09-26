@@ -1,0 +1,39 @@
+<head>
+  <title>kaki</title>
+</head>
+
+<body>
+  <div class="container-fluid">
+    {{> main}}
+  </div>
+</body>
+
+<template name="main">
+  {{#each song}}
+  <div class="row-fluid r1">
+    <div class="span5 r1">
+	<textarea id="lyrics" class="lyrics">{{lyrics}}</textarea>
+	<button id="save">Save</button>
+	<button id="reset">Reset</button>
+    </div>
+    <div class="span7 r1">
+      {{#if tube}}
+        {{> video}}
+      {{/if}}
+      {{#if marks}}
+        {{> marks}}
+      {{/if}}
+    </div>
+  </div>
+  {{/each}}
+</template>
+
+<template name="video">
+  <div id="video" class="video">{{video}}</div>
+</template>
+
+<template name="marks">
+  {{#each marks}}
+  <div class="mark">{{text}}</div>
+  {{/each}}
+</template>

@@ -1,0 +1,14 @@
+<head>
+  <title>kaki</title>
+</head>
+
+<body>
+  {{> main}}
+</body>
+
+<template name="main">
+  <h1>{{csong.song}}</h1>
+  <div id="video"></div>
+  <textarea id="myTextarea">{{csong.lyrics}}</textarea>
+  <input type="button" value="Save" />
+</template>
