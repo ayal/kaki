@@ -133,11 +133,11 @@ if (Meteor.is_client) {
     };
 
     window.doit = function(){
-
+	window.mode = 'doit';
     };
 
     window.edit = function(){
-
+	window.mode = 'edit';
     };
 
     //backbone
@@ -168,11 +168,14 @@ if (Meteor.is_client) {
     };
     window.pop = $.Deferred();
 
+    Template.lyrics.lyrics = function () {
+	var xxx = dbalbums.findOne({key: window.getkey()});
+	return xxx.lyrics;
+    };
+
     Template.video.video = function () {
-		       debugger;
 	var xxx = dbalbums.findOne({key: window.getkey()});
 	setTimeout(function(){
-
 		       window.popcorn = Popcorn.youtube("#video", xxx.tube);
 		       window.pop.resolve();
 		   },0);
@@ -190,6 +193,9 @@ if (Meteor.is_client) {
        return xxx.marks;
     };
 
+    Template.main.mode = function () {
+	return window.mode;
+    };
 
     Template.main.song = function () {
 	var xxx = dbalbums.find({key: window.getkey()});
@@ -198,7 +204,11 @@ if (Meteor.is_client) {
 
     window.lastplace = 0;
     window.lasttime = 0;
-
+    Template.marks.events = {
+	'click .alert button': function(){
+	    
+	}
+    };
     Template.main.events = {
 	'click .lyrics': function(){
             var thisplace = $('.lyrics')[0].selectionStart;

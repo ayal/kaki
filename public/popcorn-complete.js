@@ -5378,7 +5378,7 @@ var googleCallback;
 
       _setup: function( options ) {
         var newdiv = document.createElement( "div" );
-
+	  newdiv.className += ' subtitle';
         newdiv.id = "subtitle-" + i++;
         newdiv.style.display = "none";
 
