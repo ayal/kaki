@@ -13,6 +13,7 @@
       {{#if tube}}
       {{> lyrics}}
       {{> video}}
+      {{> tracks}}
       {{/if}}
       {{/each}}
     </div>
@@ -28,9 +29,16 @@
   </div>
 </template>
 
+<template name="tracks">
+  <div class="tracks span2 r1 trackscont">
+    {{#each tracks}}
+    <div class="track {{isthis}}"><a href="{{link}}">{{name}}</a></div>
+    {{/each}}
+  </div>
+</template>
 
 <template name="video">
-  <div class="span6 r1 vidcont">
+  <div class="span5 r1 vidcont">
     <div id="video" class="video">{{video}}</div>
     {{> marks}}
   </div>

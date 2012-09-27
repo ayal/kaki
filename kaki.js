@@ -44,7 +44,7 @@ if (Meteor.is_client) {
 			 }
 		     });
 
-    window.tracks = {};
+    window.tracks = [];
 
     window.getTracks = function(album, artist, article, cb) {
 	if (!article) {
@@ -116,14 +116,15 @@ if (Meteor.is_client) {
 			  }
 
 		      }
-	debugger;
 		      realTracks = [];
 
 		      $.each(tracks, function(i, obj) {
 				 var thename = obj['1'];
 				 if (thename.indexOf('[[') != -1) {
 				     thename = thename
-					 .split('|').splice(-1)[0].trim(']]');
+					 .split('|').splice(-1)[0]
+					 .replace(/[\]\[]/gim,'');
+
 
 				 }
 				 
@@ -144,24 +145,35 @@ if (Meteor.is_client) {
 						 });
 			     });
 
-			  thetracks = {};
+/*			  thetracks = {};
 			  for (var i = 0; i < realTracks.length; i++) {
-			      thetracks[window.clean(realTracks[i].name)] = realTracks[i].name;
-			      if (realTracks[i + 1]) {
+			      
+			      if (realTracks[i + 1] && !thetracks[window.clean(realTracks[i].name)]) {
 				  thetracks[window.clean(realTracks[i].name)] = realTracks[i + 1].name;	  
 			      }
-			  }
-			  
-			  cb(thetracks);
+			  }*/
+
+			  $.each(realTracks, function(i, t) {
+				     t.link = '/' + 
+					 window.mode + '/' + 
+					 encodeURIComponent(window.artist) + '/' +
+					 encodeURIComponent(window.album) + '/' + 
+					 encodeURIComponent(t.name);
+				 });
+			  cb(realTracks);
 		  });
 	}
     };
     window.getLyrics = function(artist, song, next) {
-	$.getJSON('http://apitutapi.appspot.com/lylo?url=http://www.lyricsmania.com/' +
+	window.getlyr = $.getJSON('http://apitutapi.appspot.com/lylo?url=http://www.lyricsmania.com/' +
 		  window.clearics(song) +
 		  '_lyrics_' + window.clearics(artist) +
-		  '.html&callback=?', function(a){
-		  }).done(next);
+		  '.html&callback=?')
+	    .done(next)
+	    .fail(function(){
+
+		      next();
+		  });
     };
 
     window.fetchFromPipe = function(artist, song) {
@@ -248,7 +260,7 @@ if (Meteor.is_client) {
 														    album: window.album,
 														    artist: window.artist,
 														    song: window.song,
-														    lyrics: $(lyrics).text(),
+														    lyrics: lyrics ? $(lyrics).text() : '',
 														    tube: tube},
 
 												      function(e, curs) {		
@@ -282,6 +294,7 @@ if (Meteor.is_client) {
 						       window[what](artist, album, song);   
 						       getTracks(album, artist, undefined, function(tz){
 								     window.tracks = tz;
+								     Session.set('tracks', window.tracks);
 								 });
 						   }
 					       } 
@@ -298,6 +311,14 @@ if (Meteor.is_client) {
 
     };
     window.pop = $.Deferred();
+
+    Template.tracks.tracks = function () {
+	return Session.get('tracks') || [];
+    };
+
+    Template.tracks.isthis = function () {
+	return window.song === this.name ? 'selected' : 'nothing';
+    };
 
     Template.lyrics.lyrics = function () {
 	var xxx = dbalbums.findOne({key: window.getkey()});
@@ -347,7 +368,7 @@ if (Meteor.is_client) {
 	'click .lyrics': function(){
             var thisplace = $('.lyrics')[0].selectionStart;
             var thistime = window.popcorn.currentTime();
-            var subs = $('.lyrics').text().substring(window.lastplace, thisplace);
+            var subs = $('.lyrics').val().substring(window.lastplace, thisplace);
             var mark = {
                 start: Math.max(0, window.lasttime - 1.4),
                 end: Math.max(0, thistime - 1.4),
@@ -365,6 +386,8 @@ if (Meteor.is_client) {
 
 	'click #save' : function () {
 	    var theone = dbalbums.findOne({key: window.getkey()});
+
+	    theone.lyrics = $('.lyrics').val();
 	    theone.marks = window.marks;
 	    Meteor.call('saveAlbum', theone,
 			function(e, curs) {		
