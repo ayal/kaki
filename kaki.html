@@ -34,8 +34,19 @@
     {{#each tracks}}
     <div class="track {{isthis}}"><a href="{{link}}">{{name}}</a></div>
     {{/each}}
+    <div>------------------<div>
+    {{> songs}}
   </div>
 </template>
+
+<template name="songs">
+  <div class="songs">
+    {{#each songs}}
+    <div class="song"><a href="/doit/{{artist}}/{{album}}/{{song}}">{{song}}</a></div>
+    {{/each}}
+  </div>
+</template>
+
 
 <template name="video">
   <div class="span5 r1 vidcont">

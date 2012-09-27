@@ -312,6 +312,10 @@ if (Meteor.is_client) {
     };
     window.pop = $.Deferred();
 
+    Template.songs.songs = function () {
+	return dbalbums.find({});
+    };
+
     Template.tracks.tracks = function () {
 	return Session.get('tracks') || [];
     };
