@@ -23,6 +23,43 @@ Meteor.methods({
 
 
 if (Meteor.is_client) {
+
+    window.equals = function(tis, x) {
+	var p;
+	for(p in tis) {
+	    if(typeof(x[p])=='undefined') {
+		return false;}
+	}
+
+	for(p in tis) {
+	    if (tis[p]) {
+		
+		switch(typeof(tis[p])) {
+		    
+		case 'object':
+                    if (!tis[p].equals(x[p])) {
+			return false; } break;
+		case 'function':
+                    if (typeof(x[p])=='undefined' ||
+			(p != 'equals' && tis[p].toString() != x[p].toString()))
+			return false;
+                    break;
+		default:
+                    if (tis[p] != x[p]) { return false; }
+		}
+	    } else {
+		if (x[p])
+		    return false;
+	    }
+	}
+
+	for(p in x) {
+	    if(typeof(tis[p])=='undefined') {return false;}
+	}
+
+	return true;
+    };
+
     regit = function(re, str) {
 	var arr = [];
 	var match = null;
@@ -71,27 +108,27 @@ if (Meteor.is_client) {
 	}
 	else {
 	    $.getJSON('http://en.wikipedia.org/w/api.php?action=query&prop=revisions&titles=' + article + '&rvprop=timestamp|user|comment|content&format=json&callback=?', function(e) {
-		      if (!Object.keys(e.query.pages) || !e.query.pages[Object.keys(e.query.pages)[0]].revisions) {
-			  return;
-		      }
-		      var xx = e.query.pages[Object.keys(e.query.pages)[0]].revisions[0]['*'];
+			  if (!Object.keys(e.query.pages) || !e.query.pages[Object.keys(e.query.pages)[0]].revisions) {
+			      return;
+			  }
+			  var xx = e.query.pages[Object.keys(e.query.pages)[0]].revisions[0]['*'];
 
-		      var alb = {};
+			  var alb = {};
 
-		      //var tracks = regit(/(\W*?)([\w|\s]*?)(\W*?)(\d{1,2}:\d{1,2})/gim, xx);
-		      var tracks = [];
+			  //var tracks = regit(/(\W*?)([\w|\s]*?)(\W*?)(\d{1,2}:\d{1,2})/gim, xx);
+			  var tracks = [];
 
-		      tracks = regit(/title\d+.*?=\s*(.*?)\|length/gim, xx);
+			  tracks = regit(/title\d+.*?=\s*(.*?)\|length/gim, xx);
 
-		      if (tracks.length <= 1) {
-			  tracks = regit(/title\d.*?=.(.*?)$/gim, xx);
-		      }
+			  if (tracks.length <= 1) {
+			      tracks = regit(/title\d.*?=.(.*?)$/gim, xx);
+			  }
 
-		      if (tracks.length <= 1) {
-			  //tracks = regit(/[^a-zA-Z0-9\[\]]*([a-zA-Z\s'0-9\(\),\[\]\\/|]*)([^a-zA-Z\s'0-9\(\),\[\/\]\|].*?)\d:\d{2}/gim, xx);
-			  
-			  tracks = regit(/#\s"(.*?)"\s.*?\d:\d{2}/gim, xx);
-		      }
+			  if (tracks.length <= 1) {
+			      //tracks = regit(/[^a-zA-Z0-9\[\]]*([a-zA-Z\s'0-9\(\),\[\]\\/|]*)([^a-zA-Z\s'0-9\(\),\[\/\]\|].*?)\d:\d{2}/gim, xx);
+			      
+			      tracks = regit(/#\s"(.*?)"\s.*?\d:\d{2}/gim, xx);
+			  }
 
 
 			  if (tracks.length <= 1) {
@@ -99,59 +136,59 @@ if (Meteor.is_client) {
 			  }
 			  
 
-		      if (tracks.length <= 1) {
-			  tracks = regit(/#(.*?)\d:\d{1,2}/gim, xx);
-		      }
-		      
-		      if (tracks.length <= 1) { 
-			  var theindex = xx.indexOf('==Track');
 			  if (tracks.length <= 1) {
-			      tracks = regit(/#.*?\"(.*?)\"/gim, xx);
+			      tracks = regit(/#(.*?)\d:\d{1,2}/gim, xx);
 			  }
-			  if (tracks.length <= 1) {
-			      tracks = regit(/#\s*(.*?)\n/gim, xx);
-			  }
-			  if (tracks.length <= 1) {
-			      tracks = regit(/\n.\s(.*?)[^a-zA-Z0-9\s]/gim, xx.substr(theindex));
-			  }
-
-		      }
-		      realTracks = [];
-
-		      $.each(tracks, function(i, obj) {
-				 var thename = obj['1'];
-				 if (thename.indexOf('[[') != -1) {
-				     thename = thename
-					 .split('|').splice(-1)[0]
-					 .replace(/[\]\[]/gim,'');
-
-
-				 }
-				 
-				 var theartist = artist.trim(' ');
-
-				 try {
-				     thename = thename.isASCII() ? thename : thename.deaccent();
-				     theartist = theartist.isASCII() ? theartist : theartist.deaccent();
-				 } catch (x) {
-
-				 }
-				 realTracks.push({
-						     name: thename,
-						     artist: {
-							 name: theartist
-						     },
-						     album: album
-						 });
-			     });
-
-/*			  thetracks = {};
-			  for (var i = 0; i < realTracks.length; i++) {
-			      
-			      if (realTracks[i + 1] && !thetracks[window.clean(realTracks[i].name)]) {
-				  thetracks[window.clean(realTracks[i].name)] = realTracks[i + 1].name;	  
+			  
+			  if (tracks.length <= 1) { 
+			      var theindex = xx.indexOf('==Track');
+			      if (tracks.length <= 1) {
+				  tracks = regit(/#.*?\"(.*?)\"/gim, xx);
 			      }
-			  }*/
+			      if (tracks.length <= 1) {
+				  tracks = regit(/#\s*(.*?)\n/gim, xx);
+			      }
+			      if (tracks.length <= 1) {
+				  tracks = regit(/\n.\s(.*?)[^a-zA-Z0-9\s]/gim, xx.substr(theindex));
+			      }
+
+			  }
+			  realTracks = [];
+
+			  $.each(tracks, function(i, obj) {
+				     var thename = obj['1'];
+				     if (thename.indexOf('[[') != -1) {
+					 thename = thename
+					     .split('|').splice(-1)[0]
+					     .replace(/[\]\[]/gim,'');
+
+
+				     }
+				     
+				     var theartist = artist.trim(' ');
+
+				     try {
+					 thename = thename.isASCII() ? thename : thename.deaccent();
+					 theartist = theartist.isASCII() ? theartist : theartist.deaccent();
+				     } catch (x) {
+
+				     }
+				     realTracks.push({
+							 name: thename,
+							 artist: {
+							     name: theartist
+							 },
+							 album: album
+						     });
+				 });
+
+			  /*			  thetracks = {};
+			   for (var i = 0; i < realTracks.length; i++) {
+			   
+			   if (realTracks[i + 1] && !thetracks[window.clean(realTracks[i].name)]) {
+			   thetracks[window.clean(realTracks[i].name)] = realTracks[i + 1].name;	  
+			   }
+			   }*/
 
 			  $.each(realTracks, function(i, t) {
 				     t.link = '/' + 
@@ -161,14 +198,14 @@ if (Meteor.is_client) {
 					 encodeURIComponent(t.name);
 				 });
 			  cb(realTracks);
-		  });
+		      });
 	}
     };
     window.getLyrics = function(artist, song, next) {
 	window.getlyr = $.getJSON('http://apitutapi.appspot.com/lylo?url=http://www.lyricsmania.com/' +
-		  window.clearics(song) +
-		  '_lyrics_' + window.clearics(artist) +
-		  '.html&callback=?')
+				  window.clearics(song) +
+				  '_lyrics_' + window.clearics(artist) +
+				  '.html&callback=?')
 	    .done(next)
 	    .fail(function(){
 
@@ -365,6 +402,19 @@ if (Meteor.is_client) {
     window.lasttime = 0;
     Template.marks.events = {
 	'click .alert button': function() {
+	    var theone = dbalbums.findOne({key: window.getkey()});
+	    var that = this;
+	    theone.marks = $.map(theone.marks, function(x){
+				     if (window.equals(x, that)) {
+					 return null;
+				     } 
+				     return x;
+				 });
+	    Meteor.call('saveAlbum', theone,
+			function(e, curs) {		
+			    console.log('saved', arguments);
+			});
+	    
 	    
 	}
     };
@@ -411,12 +461,12 @@ if (Meteor.is_client) {
 	},
 	'click #next' : function () {
 	    var next = window.tracks[window.clean(window.song)];
-	   location.href = '/' + 
-				window.mode + '/' + 
-				encodeURIComponent(window.artist) + '/' +
-				encodeURIComponent(window.album) + '/' + 
-				encodeURIComponent(next),
-				{ trigger: true };
+	    location.href = '/' + 
+		window.mode + '/' + 
+		encodeURIComponent(window.artist) + '/' +
+		encodeURIComponent(window.album) + '/' + 
+		encodeURIComponent(next),
+	    { trigger: true };
 	}
 
     };
