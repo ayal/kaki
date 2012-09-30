@@ -291,6 +291,9 @@ if (Meteor.is_client) {
 
     window.getsong = function(artist, song){
 	getLyrics(window.artist, window.song, function(lyrics) {
+debugger;
+		      lyrics = lyrics.replace(/\u00e2/gim, "'").replace(/[\u00c3\u00a2\u20ac\u2122]/gim,"'");
+
 		      $.when.apply($, fetchFromPipe(window.artist, window.song)).done(function(res) {
 											  var tube = 'http://www.youtube.com/watch?v=' + JSON.parse(res).id; 
 											  Meteor.call('saveAlbum', {key: window.getkey(), 
@@ -386,7 +389,10 @@ if (Meteor.is_client) {
 				    }
 				});
 		   },0);
-	return xxx.marks;
+	if (!xxx.marks) {
+	    xxx.marks = [];
+	}
+	return xxx.marks.sort(function(a,b){return a.start - b.start;});
     };
 
     Template.main.mode = function () {
@@ -401,7 +407,11 @@ if (Meteor.is_client) {
     window.lastplace = 0;
     window.lasttime = 0;
     Template.marks.events = {
+	'click .alert': function() {
+	    popcorn.currentTime(this.start);
+	},
 	'click .alert button': function() {
+	    console.log(arguments);
 	    var theone = dbalbums.findOne({key: window.getkey()});
 	    var that = this;
 	    theone.marks = $.map(theone.marks, function(x){
@@ -415,7 +425,7 @@ if (Meteor.is_client) {
 			    console.log('saved', arguments);
 			});
 	    
-	    
+	    return false;
 	}
     };
     Template.main.events = {
