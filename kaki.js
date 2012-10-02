@@ -25,6 +25,16 @@ Meteor.methods({
 if (Meteor.is_client) {
 
     $(document).bind('showsub', function(e, opts) {
+			 setTimeout(function(){
+					debugger;
+					window.floor = $('.subtitle.selected').offset().top;
+					window.bally = window.floor - 70;
+					window.bounce(100000, function() {
+					       });
+						 	  window.moveit(500, $('.subtitle.selected').offset().left, function(){});  
+					
+				    }, 1000);
+
 /*			 var text = $('.lyrics').text();
 			 var optstext = opts.text.replace('...', '');
 			 if (!optstext.trim()) {
@@ -594,6 +604,16 @@ debugger;
 }
 
 if (Meteor.is_server) {
+    Meteor.headly.config({tags: function(req, returnf){
+				  var parts = req.url.split('it/')[1].split('?')[0].split('/');
+				  var artist = decodeURIComponent(parts[0]);
+				  var album = decodeURIComponent(parts[1]);
+				  var song = decodeURIComponent(parts[2]);
+				  returnf('<meta property="og:title" content="' + artist + ' - ' + song + ' @ KAKI" />\n'
+					  + '<meta property="og:image" content="http://www.icrowds.net/wp-content/uploads/2012/02/cute-poo.jpg" />\n');
+				  return;
+			  }
+			 });
     Meteor.startup(function () {
 		       Meteor.publish("hooky", function () {
 					  return dbalbums.find({});

@@ -5401,6 +5401,7 @@ var googleCallback;
         options.showSubtitle = function() {
 
           options.innerContainer.innerHTML = options.text || "";
+	    $ && $('.selected').removeClass();
 	    options.innerContainer.className += ' selected';
 
 	    $(document).trigger('showsub', options);
