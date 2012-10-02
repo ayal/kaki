@@ -24,6 +24,19 @@ Meteor.methods({
 
 if (Meteor.is_client) {
 
+    $(document).bind('showsub', function(e, opts) {
+/*			 var text = $('.lyrics').text();
+			 var optstext = opts.text.replace('...', '');
+			 if (!optstext.trim()) {
+			     return;
+			 }
+			 var idx = text.indexOf(optstext);
+			 $('.lyrics')[0].selectionStart = idx;
+			 $('.lyrics').stop(true, true).animate({selectionEnd: idx + optstext.length},
+							       1000 * (opts.end - opts.start));*/
+//			 $('.subtitle.selected').animate({});
+		     });
+
     window.equals = function(tis, x) {
 	var p;
 	for(p in tis) {
@@ -213,61 +226,159 @@ if (Meteor.is_client) {
 		  });
     };
 
-    window.fetchFromPipe = function(artist, song) {
+    window.fetchFromPipe = function() {
+
 	var tracks = [{
 			  artist: {
 			      name: artist
 			  },
-			  name: song}];
-
+			  name: song,
+			  album: album
+		      }];
+	
 	var vidreadiez = [];
-	$.each(tracks, function(i, trk) {
+
+	$.each(tracks, function(trki, trk) {
+		   
+		   var cleantrk = window.clean(trk.name);
+		   if (cleantrk === 'length') {
+		       return;
+		   }
+		   
 
 		   var vidready = $.Deferred();
 		   vidreadiez.push(vidready);
 
-		   var song = trk.artist.name + ' - ' + trk.name;
-		   var req = $.getJSON('https://gdata.youtube.com/feeds/api/videos?q=' + song + '&orderby=relevance&max-results=1&v=2&alt=json&callback=?', function(e) {
+		   trk.artist.name = trk.artist.name.replace(/&/gim, 'and');
 
-					   if (!e.feed.entry || e.feed.entry.length === 0) {
-					       console.log('empty. resolving')
-					       vidready.resolve();
-					       return;
-					   }
+		   var song = cleantrk.length > 30 ? trk.name : (trk.artist.name.toLowerCase() + ' ' + trk.name.toLowerCase());
+		   if (window.accurate) {
+		       song += ' ' + trk.album;
+		   }
+		   
+		   var req = $.getJSON('https://gdata.youtube.com/feeds/api/videos?q=' + encodeURIComponent(song) + '&safeSearch=none&orderby=relevance&max-results=10&category=Music&v=2&alt=json&callback=?', function(e) {
 
-					   var id = e.feed.entry[0].id.$t.split(':').reverse()[0];
+				       if (!e.feed.entry || e.feed.entry.length === 0) {
+					   //					   console.log('empty. resolving');
+					   vidready.resolve();
+					   return;
+				       }
 
-					   var res = JSON.stringify({
-									id: id,
-									who_shared: 'takashirgb',
-									fromindie: true,
-									player: 'youtube_player',
-									viewCount: e.feed.entry[0].yt$statistics.viewCount,
-									favoriteCount: e.feed.entry[0].yt$statistics.favoriteCount,
-									ucount: e.feed.entry[0].yt$statistics.viewCount + e.feed.entry[0].yt$statistics.favoriteCount * 100
-								    });
+				       $.each(e.feed.entry, function(i, entry){
 
-					   console.log('good. resolving')
-					   vidready.resolve(res);
-				       });
+						  if (vidready.state() === 'resolved') {
+						      return;
+						  }
+
+						  var cleanYTitle = window.clean(entry.title.$t);
+						  var cleanartist = window.clean(trk.artist.name);
+
+						  function nogood(what) {
+						      if (cleanYTitle.indexOf(what) !== -1 && cleantrk.indexOf(what) === -1) {
+							  console.log('its a ' + what, 'srch:',
+								      song,
+								      'you said: ',
+								      cleanartist,
+								      cleantrk,
+								      'tube said',
+								      cleanYTitle);
+							  return true;
+						      }
+						      return false;
+						  };
+
+						  if (nogood('teaser') || nogood('cover') ||
+						      nogood('live') || nogood('perform') ||
+						      nogood('philhar')) {
+						      return;
+						  }
+
+						  if (cleanYTitle.replace(cleantrk, '')
+						      .replace(cleanartist, '')
+						      .replace('new', '')
+						      .replace('album', '')
+						      .replace('lyrics','')
+						      .replace('hd','')
+						      .replace(/\d+p/gim,'')
+						      .replace(window.clean(trk.album), '')
+						      .length > 4){
+						      console.log('too many guys', 'srch:',
+								  song,
+								  'you said: ',
+								  cleanartist,
+								  cleantrk,
+								  'tube said',
+								  cleanYTitle);
+						      return;
+
+						  }
+
+						  if (cleanYTitle.indexOf(cleantrk) === -1) {
+						      console.log('no title.', 'srch:',
+								  song,
+								  'you said: ',
+								  cleanartist,
+								  cleantrk,
+								  'tube said',
+								  cleanYTitle);
+						      return;
+						  }
+
+						  if (cleanYTitle.indexOf(cleanartist) === -1) {
+						      var nothing = true;
+						      $.each(entry.category,function(i, tag){
+								 if (window.clean(tag.term).indexOf(cleanartist) !== -1){
+								     nothing = false;
+								 }
+							     });
+
+						      if (nothing) {
+							  console.log('no artist.', 'srch:',
+								      song,
+								      'you said: ',
+								      cleanartist,
+								      cleantrk,
+								      'tube said',
+								      cleanYTitle);
+							  return;
+						      }
+						  }
+
+						  var id = entry.id.$t.split(':').reverse()[0];
+						  //							  thumbit(trk.name + ' ' + trk.artist.name, "//img.youtube.com/vi/" + id + "/0.jpg", 'track flaque', [256]);
+						  var res = JSON.stringify({
+									       id: id,
+									       who_shared: 'takashirgb',
+									       fromindie: true,
+									       player: 'youtube_player',
+									       viewCount: e.feed.entry[0].yt$statistics.viewCount,
+									       favoriteCount: e.feed.entry[0].yt$statistics.favoriteCount,
+									       ucount: e.feed.entry[0].yt$statistics.viewCount + e.feed.entry[0].yt$statistics.favoriteCount * 100
+									   });
+						  vidready.resolve(res);
+						  return;
+					      });
+
+				       if (vidready.state() !== 'resolved') {
+					   vidready.resolve();   
+				       }
+
+				   });
 
 		   $.when(req).fail(function() {
-					console.log('failed. resolving')
-					vidready.resolve()
+					//					console.log('failed. resolving');
+					vidready.resolve();
 				    });
-
 		   setTimeout(
-
 		       function() {
 			   if (req.state() !== 'resolved') {
-			       console.log('timeout. resolving')
+			       console.log('timeout. resolving');
 			       vidready.resolve();
 			   }
 		       }, 5000);
 	       });
 	return vidreadiez;
     };
-
 
     window.clean = function(s) {
 	return s.toLowerCase().replace(/[^a-zA-Z0-9]/gim,'').trim(' ');
@@ -294,7 +405,7 @@ if (Meteor.is_client) {
 debugger;
 		      lyrics = lyrics.replace(/\u00e2/gim, "'").replace(/[\u00c3\u00a2\u20ac\u2122]/gim,"'");
 
-		      $.when.apply($, fetchFromPipe(window.artist, window.song)).done(function(res) {
+		      $.when.apply($, fetchFromPipe(window.artist, window.song, window.album)).done(function(res) {
 											  var tube = 'http://www.youtube.com/watch?v=' + JSON.parse(res).id; 
 											  Meteor.call('saveAlbum', {key: window.getkey(), 
 														    album: window.album,

@@ -5399,7 +5399,11 @@ var googleCallback;
         options.innerContainer = newdiv;
 
         options.showSubtitle = function() {
+
           options.innerContainer.innerHTML = options.text || "";
+	    options.innerContainer.className += ' selected';
+
+	    $(document).trigger('showsub', options);
         };
       },
       /**
