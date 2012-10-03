@@ -5378,7 +5378,6 @@ var googleCallback;
 
       _setup: function( options ) {
         var newdiv = document.createElement( "div" );
-	  newdiv.className += ' subtitle';
         newdiv.id = "subtitle-" + i++;
         newdiv.style.display = "none";
 
@@ -5401,7 +5400,7 @@ var googleCallback;
         options.showSubtitle = function() {
 
           options.innerContainer.innerHTML = options.text || "";
-	    $ && $('.selected').removeClass();
+	    $('.selected').removeClass();
 	    options.innerContainer.className += ' selected';
 
 	    $(document).trigger('showsub', options);
@@ -5415,6 +5414,7 @@ var googleCallback;
        */
       start: function( event, options ){
         options.innerContainer.style.display = "inline";
+	  options.innerContainer.className += ' subtitle';
         options.showSubtitle( options, options.text );
       },
       /**

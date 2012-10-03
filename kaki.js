@@ -25,15 +25,38 @@ Meteor.methods({
 if (Meteor.is_client) {
 
     $(document).bind('showsub', function(e, opts) {
+			 console.log(opts);
 			 setTimeout(function(){
-					debugger;
 					window.floor = $('.subtitle.selected').offset().top;
 					window.bally = window.floor - 70;
 					window.bounce(100000, function() {
 					       });
-						 	  window.moveit(500, $('.subtitle.selected').offset().left, function(){});  
+					var words = opts.text.split(' ');
+
+					var moveword = function(i) {
+					    var word = words[i];
+					    if (!word) {
+						return;
+					    }
+debugger;
+					    idx = opts.text.indexOf(word);
+
+					    window.moveit((opts.end - opts.start) * 1000 / (words.length - 1),
+							  $('.subtitle.selected').position().left + idx * 15,
+							  function(){
+							      moveword(++i); 
+							  });
+					};
+					window.moveit(10,
+						      $('.subtitle.selected').position().left, function(){
+							  moveword(1);
+						      });
+
+					// window.moveit((opts.end - opts.start) * 1000, 
+					// 						  $('.subtitle.selected').offset().left + $('.subtitle.selected').width() , function(){
+					// 						  });
 					
-				    }, 1000);
+				    }, 10);
 
 /*			 var text = $('.lyrics').text();
 			 var optstext = opts.text.replace('...', '');
@@ -412,7 +435,7 @@ if (Meteor.is_client) {
 
     window.getsong = function(artist, song){
 	getLyrics(window.artist, window.song, function(lyrics) {
-debugger;
+
 		      lyrics = lyrics.replace(/\u00e2/gim, "'").replace(/[\u00c3\u00a2\u20ac\u2122]/gim,"'");
 
 		      $.when.apply($, fetchFromPipe(window.artist, window.song, window.album)).done(function(res) {
@@ -467,9 +490,9 @@ debugger;
     Backbone.history.start({pushState: true});
 
     window.renderpop = function(){
+
 	window.renderpop = $.noop();
 	window.popcorn = Popcorn.youtube("#video", alb.tube);
-
     };
     window.pop = $.Deferred();
 
@@ -494,6 +517,11 @@ debugger;
 	var xxx = dbalbums.findOne({key: window.getkey()});
 	setTimeout(function(){
 		       window.popcorn = Popcorn.youtube("#video", xxx.tube);
+		       setTimeout(function(){
+				      $('#canvas').attr('width', $('#video').width()).attr('height', $('#video').height() - 50)
+					  .css('top', $('#video').offset().top)
+					  .css('left', $('#video').offset().left);
+				  },1000);
 		       window.pop.resolve();
 		   },0);
     };
