@@ -2,60 +2,62 @@
   <title>kaki</title>
 </head>
 
-<body>
-  <canvas id="canvas"></canvas>
+<body>  
+  <div style="position:fixed;top:50%;left:50%;z-index:-10;background-color:pink;color:white;">
+    <img src="/jig.jpg">
+    <div>Loading..</div>
+  </div>
     {{> main}}
 </body>
 
 <template name="main">
   <div class="{{mode}} container-fluid">
-  {{#each song}}
     <div class="row-fluid r1">
+      {{#each song}}
       {{#if tube}}
+      <div class="span5 r1 lyrcont">
       {{> lyrics}}
+      </div>
+      <div class="span5 r1 vidcont">
       {{> video}}
-      {{> tracks}}
       {{/if}}
+      </div>
       {{/each}}
+      <div>------------------</div>
+      <div class="tracks span2 r1 trackscont">
+      {{> tracks}}
+      <div>--- already kaki ---</div>
+      {{> songs}}
+      </div>
     </div>
   </div>
 </template>
 
 <template name="lyrics">
-  <div class="span5 r1 lyrcont">
     <textarea id="lyrics" class="lyrics">{{lyrics}}</textarea>
     <button id="save">Save</button>
-    <button id="reset">Reset</button>
-    <button id="next">Next</button>
-  </div>
+    <button id="reset">X Marks</button>
+    <button id="reload">Reload</button>
 </template>
 
 <template name="tracks">
-  <div class="tracks span2 r1 trackscont">
     {{#each tracks}}
     <div class="track {{isthis}}"><a href="{{link}}">{{name}}</a></div>
     {{/each}}
-    <div>------------------<div>
-    {{> songs}}
-  </div>
 </template>
 
 <template name="songs">
   <div class="songs">
     {{#each songs}}
-    <div class="song"><a href="/doit/{{artist}}/{{album}}/{{song}}">{{song}}</a></div>
+    <div class="song"><a href="/edit/{{artist}}/{{album}}/{{song}}">{{song}}</a></div>
     {{/each}}
   </div>
 </template>
 
-
 <template name="video">
-  <div class="span5 r1 vidcont">
     <div id="video" class="video">{{video}}</div>
     {{> marks}}
-  </div>
 </template>
-
 <template name="marks">
   <div class="marks">
     {{#each marks}}
