@@ -4,10 +4,23 @@ LFM_API_KEY = '13d380964e80e47a5a9c6daa29d0b8e0';
 Meteor.methods({
   saveAlbum: function(calb) {
     if (this.is_simulation) {
+      var scrltp = $('.marks').scrollTop();
+      window.restoreScroll = function(){
+        setTimeout(function(){
+//            $('.marks').scrollTop(scrltp);
+        }, 1000);
+        
+      };
+      window.calb = calb;
       return '';
     }
     
     console.log('saving..', calb.album);
+    _.each(calb.marks, function(mrk) {
+      mrk.start = parseFloat(mrk.start);
+      mrk.end = parseFloat(mrk.end);
+    });
+
     var already = dbalbums.findOne({key: calb.key});
     if (!already) {
       console.log('saving new song');
@@ -75,7 +88,7 @@ if (Meteor.is_client) {
 			 1000 * (opts.end - opts.start));*/
     //			 $('.subtitle.selected').animate({});
   });
-
+  window.wait = false;
   window.equals = function(tis, x) {
     var p;
     for(p in tis) {
@@ -126,17 +139,6 @@ if (Meteor.is_client) {
   };
 
   window.marks = [];
-  Meteor.subscribe("hooky", function() {
-
-    var theone = dbalbums.findOne({key: window.getkey()});
-    if (!theone) {
-      window.getsong(window.artist, window.song);
-    }
-    else {
-      window.sylz = theone.sylz || [];
-    }
-    return;
-  });
 
   window.tracks = [];
 
@@ -286,15 +288,28 @@ if (Meteor.is_client) {
     }
   };
   window.getLyrics = function(artist, song, next) {
-    window.getlyr = $.getJSON('http://apitutapi.appspot.com/lylo?url=http://www.lyricsmania.com/' +
+
+    if (!artist) {
+      next();
+      return;
+    }
+/*    window.getlyr = $.getJSON('http://apitutapi.appspot.com/lylo?url=http://www.lyricsmania.com/' +
 			      window.clearics(song) +
 			      '_lyrics_' + window.clearics(artist) +
-			      '.html&callback=?')
+			      '.html&callback=?')*/
+    window.getlyr = $.getJSON('http://apitutapi.appspot.com/xylo?url=http://rapgenius.com/' +
+                              firstcap(window.clearics(artist)) + '-' +
+			      window.clearics(song) +
+			      '-lyrics' + '&callback=?')
       .done(next)
       .fail(function(){
 
-	next();
       });
+    setTimeout(function(){
+      if (window.getlyr.state() !== 'resolved') {
+        next();
+      }
+    }, 5000);
   };
 
   window.fetchFromPipe = function() {
@@ -344,7 +359,7 @@ if (Meteor.is_client) {
 	  function nogood(what) {
             var desc = entry.media$group.media$description.$t;
             if (typeof what === 'string') {
-              if ((cleanYTitle.indexOf(what) !== -1 || desc.indexOf(what) !== -1) &&
+              if ((cleanYTitle.indexOf(what) !== -1) &&
                   cleantrk.indexOf(what) === -1){
                 
 	        console.log('its a ' + what, 'srch:',
@@ -475,8 +490,13 @@ if (Meteor.is_client) {
   };
 
   window.clearics = function(s) {
-    return s && s.toLowerCase().replace(/\s/gim, '_').replace(/[^a-zA-Z0-9\s_]/gim, '').trim(' ');
+//    return s && s.toLowerCase().replace(/\s/gim, '_').replace(/[^a-zA-Z0-9\s_]/gim, '').trim(' ');
+    return s && s.toLowerCase().replace(/\s/gim, '-').replace(/[^a-zA-Z0-9\s-]/gim, '').trim(' ');
+  };
 
+  window.firstcap = function(s){
+    var f = s[0];
+    return f.toUpperCase() + s.slice(1);
   };
 
 
@@ -489,9 +509,9 @@ if (Meteor.is_client) {
     return window.clean(artist) + '_' + window.clean(song);
   };
 
-  window.getsong = function(artist, song){
+  window.getsong = function(artist, song) {
     getLyrics(window.artist, window.song, function(lyrics) {
-
+      lyrics = lyrics || '<div>no nothing</div>';
       lyrics = lyrics.replace(/\u00e2/gim, "'").replace(/[\u00c3\u00a2\u20ac\u2122]/gim,"'");
       
       var after = function(vid){
@@ -500,11 +520,12 @@ if (Meteor.is_client) {
 				  album: window.album,
 				  artist: window.artist,
 				  song: window.song,
-				  lyrics: lyrics ? $(lyrics).text() : '',
+				  lyrics: lyrics ? $(lyrics).text().trim() : '',
 				  tube: tube},
 
 		    function(e, curs) {		
 		      console.log('saved', arguments);
+                      window.restoreScroll();
 		    });
 	
       };
@@ -557,9 +578,11 @@ if (Meteor.is_client) {
 	window[what](artist, album, song);   
 	dolfm(album, artist, function(trkz) {
 	  trkz = trkz.album.tracks.track.length ? $.map(trkz.album.tracks.track, function(tr){
+            var name = tr.name ? tr.name.toLowerCase() : tr.toLowerCase();
+            name = name.replace('&', 'and');
 	    return {artist: {name: artist}, 
 		    album: album, 
-		    name: tr.name ? tr.name.toLowerCase() : tr.toLowerCase()};}) : [{artist: {name: artist},
+		    name: name};}) : [{artist: {name: artist},
 										     album: album,
 										     name: trkz.album.tracks.track.name}];
 	  $.each(trkz, function(i, t) {
@@ -587,10 +610,28 @@ if (Meteor.is_client) {
     window.renderpop = $.noop();
     window.popcorn = Popcorn.smart("#video", alb.tube);
   };
+
   window.pop = $.Deferred();
 
+  Meteor.subscribe("hooky", function () {
+    $(function(){
+          $('.jig').hide();
+    });
+
+    var theone = dbalbums.findOne({key: window.getkey()});  
+    if (!theone && window.artist && window.song) {
+      window.getsong(window.artist, window.song);   
+    }
+  });
   Template.songs.songs = function () {
-    return dbalbums.find({marks: {"$gt": {}}});
+    var the = dbalbums.find({});
+    var arr = [];
+    the.forEach(function(x){
+      if (x && x.lyrics && x.lyrics.length > 10) {
+       arr.push(x);
+      }
+    });
+    return arr;
   };
 
   Template.tracks.tracks = function () {
@@ -610,13 +651,13 @@ if (Meteor.is_client) {
   };
 
   Template.video.video = function () {
+
     var xxx = window.getkey() ? dbalbums.findOne({key: window.getkey()}) : dbalbums.findOne({});
     if (!xxx) {
         return;
     }
 
     setTimeout(function(){
-
       window.popcorn = Popcorn.smart("#video", xxx.tube);
       setTimeout(function(){
 	$('#canvas').attr('width', $('#video').width()).attr('height', $('#video').height() - 50)
@@ -627,6 +668,12 @@ if (Meteor.is_client) {
     },0);
   };
 
+  Template.main.preserve({
+      ".marks": function(node){         
+        return node;
+      }
+  });
+
   Template.marks.marks = function () {
     var xxx = window.getkey() ? dbalbums.findOne({key: window.getkey()}) : dbalbums.findOne({});
     if (!xxx) {
@@ -635,9 +682,12 @@ if (Meteor.is_client) {
     setTimeout(function(){
       pop.done(function(){
 	if (xxx.marks) {
+
 	  window.marks = xxx.marks;
 	  
 	  $.each(xxx.marks, function(i, mrk) {
+            mrk.start = parseFloat(mrk.start);
+            mrk.end = parseFloat(mrk.end);
 	    window.popcorn = popcorn.subtitle(mrk);
 	  });
 	}
@@ -667,18 +717,66 @@ if (Meteor.is_client) {
     'click .alert': function() {
       popcorn.currentTime(this.start);
     },
-    'click .alert button': function() {
+    'click span.badge-success': function(e) {
+      console.log(e);
+      var theone = dbalbums.findOne({key: window.getkey()});
+      var that = this;
+
+      theone.marks = $.map(theone.marks, function(x){
+	if (window.equals(x, that)) {
+          that.start = (e.ctrlKey ? parseFloat(that.start)-0.25 : parseFloat(that.start)+0.25);
+	  return that;
+	}
+	return x;
+      });
+
+      Meteor.call('saveAlbum', theone,
+		  function(e, curs) {		
+                    window.restoreScroll();
+		    console.log('saved', arguments);
+		  });
+
+
+
+    },
+    'click span.badge-info': function(e) {
+      var theone = dbalbums.findOne({key: window.getkey()});
+      var that = this;
+
+      theone.marks = $.map(theone.marks, function(x){
+	if (window.equals(x, that)) {
+          that.end = (e.ctrlKey ? parseFloat(that.end)-0.25 : parseFloat(that.end)+0.25);
+	  return that;
+	}
+	return x;
+      });
+
+      Meteor.call('saveAlbum', theone,
+		  function(e, curs) {		
+                    window.restoreScroll();
+		    console.log('saved', arguments);
+		  });
+
+
+
+    },
+    'click .alert .close': function() {
       console.log(arguments);
       var theone = dbalbums.findOne({key: window.getkey()});
       var that = this;
+
       theone.marks = $.map(theone.marks, function(x){
 	if (window.equals(x, that)) {
 	  return null;
 	} 
 	return x;
       });
+
+//      dbalbums.update(theone._id, theone);
+      
       Meteor.call('saveAlbum', theone,
 		  function(e, curs) {		
+                    window.restoreScroll();
 		    console.log('saved', arguments);
 		  });
       
@@ -732,12 +830,17 @@ if (Meteor.is_client) {
 
   Template.main.events = {
     'click .lyrics': function(){
+      if (window.wait) {
+        window.lasttime = window.popcorn.currentTime();
+        window.lastplace = $('.lyrics')[0].selectionStart;
+        return;
+      }
       var thisplace = $('.lyrics')[0].selectionStart;
       var thistime = window.popcorn.currentTime();
       var subs = $('.lyrics').val().substring(window.lastplace, thisplace);
       var mark = {
-        start: Math.max(0, window.lasttime - 1.4),
-        end: Math.max(0, thistime - 1.4),
+        start: Math.max(0, window.lasttime - 1.4).toFixed(1),
+        end: Math.max(0, thistime - 1.4).toFixed(1),
         text: '...' + subs
       };
       window.marks.push(mark);
@@ -750,16 +853,19 @@ if (Meteor.is_client) {
       window.lasttime = thistime;
     },
 
+
     'click #save' : function () {
       var theone = dbalbums.findOne({key: window.getkey()});
 
       theone.lyrics = $('.lyrics').val();
+
       theone.marks = window.marks;
       theone.sylz = window.sylz;
 
       Meteor.call('saveAlbum', theone,
 		  function(e, curs) {		
 		    console.log('saved', arguments);
+                      window.restoreScroll();
 		  });
       
     },
@@ -768,18 +874,30 @@ if (Meteor.is_client) {
       var theone = dbalbums.findOne({key: window.getkey()});
       theone.sylz = [];
       theone.marks = [];
+
       Meteor.call('saveAlbum', theone,
 		  function(e, curs) {		
 		    console.log('saved', arguments);
 		    window.popcorn = Popcorn.youtube("#video", alb.tube);
+                      window.restoreScroll();
 		  });
     },
     'click #reload' : function () {
       var theone = dbalbums.findOne({key: window.getkey()});
       dbalbums.remove(theone);
+
       setTimeout(function(){
               location.reload();
       }, 5000);
+    },
+    'click #wait' : function () {
+      window.wait = !window.wait;
+      if (window.wait) {
+          $('#wait').css('background-color', 'red');
+      }
+      else {
+          $('#wait').css('background-color', 'white');
+      }
     },
     'click #next' : function () {
       var next = window.tracks[window.clean(window.song)];

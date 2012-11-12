@@ -3,7 +3,7 @@
 </head>
 
 <body>  
-  <div style="position:fixed;top:50%;left:50%;z-index:-10;background-color:pink;color:white;">
+  <div class="jig" style="position:fixed;top:50%;left:50%;z-index:-10;background-color:pink;color:white;">
     <img src="/jig.jpg">
     <div>Loading..</div>
   </div>
@@ -23,10 +23,11 @@
       {{/if}}
       </div>
       {{/each}}
-      <div>------------------</div>
       <div class="tracks span2 r1 trackscont">
       {{> tracks}}
-      <div>--- already kaki ---</div>
+
+      <div>>> >>>>>>>>>>> >>></div>
+      <div>>> in the kaki >>></div>
       {{> songs}}
       </div>
     </div>
@@ -38,6 +39,7 @@
     <button id="save">Save</button>
     <button id="reset">X Marks</button>
     <button id="reload">Reload</button>
+    <button id="wait">WAIT!</button>
 </template>
 
 <template name="tracks">
@@ -62,12 +64,12 @@
   <div class="marks">
     {{#each marks}}
     <div class="mark">
+      <span class="badge badge-success">{{start}}</span>
+      <span class="badge badge-info">{{end}}</span>
       <div class="alert">
 	<button type="button" class="close" data-dismiss="alert">x</button>
       {{text}}
       </div>
-      <span class="badge badge-success">{{start}}</span>
-      <span class="badge badge-info">{{end}}</span>
     </div>
     {{/each}}
   </div>
