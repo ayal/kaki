@@ -26,8 +26,7 @@
       {{/each}}
       <div class="tracks span2 r1 trackscont">
       {{> tracks}}
-      <div>>> >>>>>>>>>>> >>></div>
-      <div>>> in the kaki >>></div>
+      <div> COMPLETE SONGS </div>
       {{> songs}}
       </div>
     </div>
@@ -44,15 +43,17 @@
 </template>
 
 <template name="tracks">
+  <div class="thetracks">
     {{#each tracks}}
     <div class="track {{isthis}}"><a href="{{link}}">{{name}}</a></div>
     {{/each}}
+  </div>
 </template>
 
 <template name="songs">
   <div class="songs">
     {{#each songs}}
-    <div class="song"><a href="/edit/{{artist}}/{{album}}/{{song}}">{{song}}</a></div>
+    <div class="song alert alert-success {{isthis}}"><a href="{{link}}">{{song}} ({{album}})</a></div>
     {{/each}}
   </div>
 </template>
