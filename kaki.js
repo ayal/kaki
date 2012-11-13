@@ -1,25 +1,33 @@
+Meteor.__root = 'http://81.218.229.162:3000';
 dbalbums = new Meteor.Collection("dbalbums");
 LFM_API_KEY = '13d380964e80e47a5a9c6daa29d0b8e0';
 
 Meteor.methods({
+  fbid: function(){
+    if (this.is_simulation) {
+      return;
+    }
+
+    if (this.userId) {
+      var user = Meteor.users.findOne({_id: this.userId});
+      return user.services.facebook;
+    };
+    return null;
+
+  },
   saveAlbum: function(calb) {
     if (this.is_simulation) {
-      var scrltp = $('.marks').scrollTop();
-      window.restoreScroll = function(){
-        setTimeout(function(){
-//            $('.marks').scrollTop(scrltp);
-        }, 1000);
-        
-      };
       window.calb = calb;
       return '';
     }
     
     console.log('saving..', calb.album);
-    _.each(calb.marks, function(mrk) {
-      mrk.start = parseFloat(mrk.start);
-      mrk.end = parseFloat(mrk.end);
-    });
+    if (calb.marks) {
+      _.each(calb.marks, function(mrk) {
+        mrk.start = parseFloat(mrk.start);
+        mrk.end = parseFloat(mrk.end);
+      });
+    }
 
     var already = dbalbums.findOne({key: calb.key});
     if (!already) {
@@ -37,7 +45,6 @@ Meteor.methods({
 
 
 if (Meteor.is_client) {
-  console.log();
   window.moveword = function(i, time, stop) {
     var text = $('.subtitle.selected').text();
     var words = text.split(' ');
@@ -535,7 +542,7 @@ if (Meteor.is_client) {
 
 		    function(e, curs) {		
 		      console.log('saved', arguments);
-                      window.restoreScroll();
+
 		    });
 	
       };
@@ -544,14 +551,14 @@ if (Meteor.is_client) {
         after(window.vid);
       }
       else {
-        if (!window.artist) {
+        if (!window.artist || !window.song) {
             return;
         }
         $.when.apply($, fetchFromPipe(window.artist, window.song, window.album)).done(function(res) {
           if (!res) {
               return;
           }
-	  after(JSON.parse(res).id)
+	  after(JSON.parse(res).id);
         });
       }
 
@@ -576,6 +583,7 @@ if (Meteor.is_client) {
     routes: {
       ":what/:artist": "main",
       ":what/:artist/": "main",
+      ":what/:artist/:album": "main",
       ":what/:artist/:album/:song": "main",
       ":what/:artist/:album/:song/": "main",
       ":what/:artist/:album/:song/:vid": "main"
@@ -585,16 +593,16 @@ if (Meteor.is_client) {
         $('head').append($('<meta property="og:title" content="' + artist + ' - ' + song + ' @ KAKI" />'));
         $('head').append($('<meta property="og:image" content="http://kaki.meteor.com/jig.jpg" />'));
 
-	window.artist = decodeURIComponent(artist);
-	window.album = decodeURIComponent(album);
-	window.song = decodeURIComponent(song);
+	window.artist = artist && decodeURIComponent(artist);
+	window.album = album && decodeURIComponent(album);
+	window.song = song && decodeURIComponent(song);
 	window.mode = what;
         Session.set('mode', what);
         window.vid = vid;
 
 	window[what](artist, album, song);   
 
-        if (album && song) {
+        if (album) {
           dolfm(album, artist, function(trkz) {
 	    trkz = trkz.album.tracks.track.length ? $.map(trkz.album.tracks.track, function(tr){
               var name = tr.name ? tr.name.toLowerCase() : tr.toLowerCase();
@@ -604,6 +612,7 @@ if (Meteor.is_client) {
 		      name: name};}) : [{artist: {name: artist},
 				         album: album,
 				         name: trkz.album.tracks.track.name}];
+            
 	    $.each(trkz, function(i, t) {
 	      t.link = '/' + 
 	        window.mode + '/' + 
@@ -613,6 +622,14 @@ if (Meteor.is_client) {
 	    });
 
 	    window.tracks = trkz;
+            Meteor.call('saveAlbum', {key: window.artist + '_' + window.album,
+				      album: window.album,
+                                      tracks: trkz,
+				      artist: window.artist},                        
+		        function(e, curs) {		
+		          console.log('saved', arguments);
+		        });
+
 	    Session.set('tracks', window.tracks);
 	  });
           
@@ -633,13 +650,36 @@ if (Meteor.is_client) {
   };
 
   window.pop = $.Deferred();
+  window.theonez = function(){
+      return dbalbums.findOne({key: window.getkey()});  
+  };
 
   Meteor.subscribe("hooky", function () {
+    Meteor.call('fbid', function(e, usr){
+      Session.set('fbuser', usr);
+    });
+
+
     var theone = dbalbums.findOne({key: window.getkey()});  
     if (!theone && window.artist && window.song) {
       window.getsong(window.artist, window.song);   
     }
   });
+
+  Template.albums.albums = function () {
+    if (!Session.get('mode')) {
+      return [];
+    }
+
+    var the  = dbalbums.find({tracks: {$gt: {}}});
+    var arr = [];
+    the.forEach(function(x){
+      x.link = '/' + window.mode + '/' + x.artist + '/' + x.album;
+      arr.push(x);
+    });
+
+    return arr;
+  };
 
   Template.songs.songs = function () {
     if (!Session.get('mode')) {
@@ -653,7 +693,14 @@ if (Meteor.is_client) {
       if (x && x.marks && x.marks.length > 0) {
         if (window.artist) {
           if (x.artist === window.artist) {
-            arr.push(x);
+            if (window.album) {
+              if (x.album === window.album) {
+                arr.push(x);   
+              }
+            }
+            else {
+              arr.push(x);   
+            }
           }
         }
         else {
@@ -683,16 +730,32 @@ if (Meteor.is_client) {
 
   Template.lyrics.lyrics = function () {
 
-    var xxx = window.getkey() ? dbalbums.findOne({key: window.getkey()}) : dbalbums.findOne({});
+    var xxx = dbalbums.findOne({key: window.getkey()});
     if (!xxx) {
       return '';
     }
     return xxx.lyrics;
   };
 
+  Template.user.fbuser = function(id){
+    var s = Session.get(id);
+    if (s) {
+        return s;
+    }
+    $.getJSON('https://graph.facebook.com/' + id + '&callback=?', function(res){
+      Session.set(id, res);
+    });
+  };
+
+  Template.video.isme = function(){
+    var it = window.theonez();
+    it.yes = Session.get('fbuser') ? it.who === Session.get('fbuser').id : null;
+    return it;
+  };
+
   Template.video.video = function () {
     $('.jig').show();
-    var xxx = window.getkey() ? dbalbums.findOne({key: window.getkey()}) : dbalbums.findOne({});
+    var xxx = dbalbums.findOne({key: window.getkey()});
     if (!xxx) {
       return;
     }
@@ -710,6 +773,7 @@ if (Meteor.is_client) {
       },1000);
       window.pop.resolve();
     }, window.mode === 'edit' ? 3000 : 0);
+    return xxx;
   };
 
   Template.main.preserve({
@@ -779,7 +843,7 @@ if (Meteor.is_client) {
       
       Meteor.call('saveAlbum', theone,
 		  function(e, curs) {		
-                    window.restoreScroll();
+
 		    console.log('saved', arguments);
 		  });
       
@@ -799,7 +863,7 @@ if (Meteor.is_client) {
 
       Meteor.call('saveAlbum', theone,
 		  function(e, curs) {		
-                    window.restoreScroll();
+
 		    console.log('saved', arguments);
 		  });
     },
@@ -817,7 +881,7 @@ if (Meteor.is_client) {
 
       Meteor.call('saveAlbum', theone,
 		  function(e, curs) {		
-                    window.restoreScroll();
+
 		    console.log('saved', arguments);
 		  });
 
@@ -840,7 +904,6 @@ if (Meteor.is_client) {
       
       Meteor.call('saveAlbum', theone,
 		  function(e, curs) {		
-                    window.restoreScroll();
 		    console.log('saved', arguments);
 		  });
       
@@ -901,7 +964,7 @@ if (Meteor.is_client) {
         Meteor.call('saveAlbum', theone,
 		    function(e, curs) {		
 		      console.log('saved', arguments);
-                      window.restoreScroll();
+
 		    });
       }
 
@@ -942,7 +1005,7 @@ if (Meteor.is_client) {
       Meteor.call('saveAlbum', theone,
 		  function(e, curs) {		
 		    console.log('saved', arguments);
-                    window.restoreScroll();
+
 		  });
       
     },
@@ -956,7 +1019,7 @@ if (Meteor.is_client) {
 		  function(e, curs) {		
 		    console.log('saved', arguments);
 		    window.popcorn = Popcorn.youtube("#video", alb.tube);
-                    window.restoreScroll();
+
 		  });
     },
     'click #reload' : function () {
@@ -966,6 +1029,50 @@ if (Meteor.is_client) {
       setTimeout(function(){
         location.reload();
       }, 5000);
+    },
+    'click #drop' : function(){
+      var theone = dbalbums.findOne({key: window.getkey()});
+      theone.who = null;
+      Meteor.call('saveAlbum', theone,
+		  function(e, curs) {		
+		    console.log('saved', arguments);
+		  });
+    },
+    'click #grab' : function(){
+      var currentUser = Session.get('fbuser');
+
+      var grabWithUser = function(cu) {
+        var already = dbalbums.findOne({who: cu.id});
+        if (already) {
+            alert('You already chose: ' + already.song + ' (' + already.album + ')');
+        }
+        else {
+          var theone = dbalbums.findOne({key: window.getkey()});
+          theone.who = cu.id;
+          Meteor.call('saveAlbum', theone,
+		      function(e, curs) {		
+		        console.log('saved', arguments);
+		  });
+        } 
+      };
+
+      if (currentUser) {
+        grabWithUser(currentUser);
+        return;
+      }
+
+      Meteor.loginWithFacebook({
+        requestPermissions: ['publish_actions']
+      }, function (err) {
+        Meteor.call('fbid', function(e, usr){
+          Session.set('fbuser', usr);
+          grabWithUser(usr);
+        });
+
+        if (err) {
+          Session.set('errorMessage', err.reason || 'Unknown error');   
+        }
+      });
     },
     'click #wait' : function () {
       window.wait = !window.wait;
@@ -990,18 +1097,18 @@ if (Meteor.is_client) {
 }
 
 if (Meteor.is_server) {
-/*  Meteor.headly.config({tags: function(req, returnf){
-    var parts = req.url.split('it/')[1].split('?')[0].split('/');
-    var artist = decodeURIComponent(parts[0]);
-    var album = decodeURIComponent(parts[1]);
-    var song = decodeURIComponent(parts[2]);
-    returnf('<meta property="og:title" content="' + artist + ' - ' + song + ' @ KAKI" />\n'
-	    + '<meta property="og:image" content="http://www.icrowds.net/wp-content/uploads/2012/02/cute-poo.jpg" />\n');
-    return;
-  }
-		       });*/
 
-  Meteor.startup(function () {
+  Accounts.loginServiceConfiguration.remove({});
+
+
+  Accounts.loginServiceConfiguration.insert({
+    service: "facebook",
+    appId: "394200583983773",
+    secret: "e80ac2a1cb7c3f76f16192fda56c364c"
+  });
+
+Meteor.startup(function () {
+  
     Meteor.publish("hooky", function () {
       return dbalbums.find({});
     });

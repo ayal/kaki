@@ -26,18 +26,19 @@
       {{/each}}
       <div class="tracks span2 r1 trackscont">
       {{> tracks}}
-      <div> COMPLETE SONGS </div>
+      {{> albums}}
       {{> songs}}
       </div>
     </div>
   </div>
 </template>
 
+
 <template name="lyrics">
     <textarea id="lyrics" class="lyrics">{{lyrics}}</textarea>
     <button id="save">Save</button>
     <button id="reset">X Marks</button>
-    <button id="reload">Reload</button>
+    <button id="reload">delete</button>
     <button id="wait">WAIT!</button>
     <button id="retube">re-tube</button>
 </template>
@@ -53,13 +54,54 @@
 <template name="songs">
   <div class="songs">
     {{#each songs}}
-    <div class="song alert alert-success {{isthis}}"><a href="{{link}}">{{song}} ({{album}})</a></div>
+    <div class="song alert alert-success {{isthis}}"><a href="{{link}}">{{song}} ({{album}})</a>
+      {{#if who}}
+      <img src="https://graph.facebook.com/{{who}}/picture" style="width:32px"> 
+     {{/if}}
+    </div>
+    {{/each}}
+  </div>
+</template>
+
+<template name="albums">
+  <div class="album">
+    {{#each albums}}
+    <div class="album alert alert-info {{isthis}}"><a href="{{link}}">Just {{album}}</a></div>
     {{/each}}
   </div>
 </template>
 
 <template name="video">
-    <div id="video" class="video">{{{video}}}</div>
+  <div id="video" class="video">
+    <div class="grabit">
+      {{#if video.who}}
+      {{#with isme}}
+      {{#if yes}}
+      <div class="alert alert-error">
+	<strong>This song belongs to you</strong>
+	<button id="drop" class="btn btn-large btn-danger" type="button">DROP THIS SONG!</button>
+      </div>
+      {{else}}
+      <div class="alert alert-error">This song belongs to {{> user who}}</div>
+      {{/if}}
+      {{/with}}
+      {{else}}
+    </div>
+    <div class="alert alert-warning">
+      <strong>This song belongs to no one!</strong>
+      <button id="grab" class="btn btn-large btn-primary" type="button">GRAB THIS SONG!</button>
+    </div>
+    {{/if}}
+  </div>
+</template>
+
+<template name="user">
+  {{#with fbuser this}}
+  <strong>
+    <span> {{name}}</span>
+    <span><img src="https://graph.facebook.com/{{id}}/picture" title="{{name}}"></span>
+  </strong>
+  {{/with}}
 </template>
 
 <template name="marks">
