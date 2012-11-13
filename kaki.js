@@ -312,7 +312,7 @@ if (Meteor.is_client) {
     }, 5000);
   };
 
-  window.fetchFromPipe = function() {
+  window.fetchFromPipe = function(artist, song, album, notid) {
     var tracks = [{
       artist: {
 	name: artist
@@ -390,7 +390,6 @@ if (Meteor.is_client) {
 	    return false;
 	  };
 
-
 	  if (nogood(/\d{2}.\\d{2}/gim) || nogood('teaser') || nogood('cover') ||
 	      nogood('live') || nogood('perform') ||
 	      nogood('philhar')) {
@@ -449,6 +448,11 @@ if (Meteor.is_client) {
 	  }
 
 	  var id = entry.id.$t.split(':').reverse()[0];
+
+          if (notid === id) {
+              return;
+          }
+          
 	  //							  thumbit(trk.name + ' ' + trk.artist.name, "//img.youtube.com/vi/" + id + "/0.jpg", 'track flaque', [256]);
 	  var res = JSON.stringify({
 	    id: id,
@@ -515,7 +519,8 @@ if (Meteor.is_client) {
       lyrics = lyrics.replace(/\u00e2/gim, "'").replace(/[\u00c3\u00a2\u20ac\u2122]/gim,"'");
       
       var after = function(vid){
-        var tube = vid.length === 11 ? 'http://www.youtube.com/watch?v=' + vid : 'http://vimeo.com/' + vid; 
+        window.tube = vid.length === 11 ? 'http://www.youtube.com/watch?v=' + vid : 'http://vimeo.com/' + vid; 
+        window.tubeid = vid;
 	Meteor.call('saveAlbum', {key: window.getkey(), 
 				  album: window.album,
 				  artist: window.artist,
@@ -643,6 +648,7 @@ if (Meteor.is_client) {
   };
 
   Template.lyrics.lyrics = function () {
+
     var xxx = window.getkey() ? dbalbums.findOne({key: window.getkey()}) : dbalbums.findOne({});
     if (!xxx) {
         return '';
@@ -657,7 +663,10 @@ if (Meteor.is_client) {
         return;
     }
 
-    setTimeout(function(){
+    window.pop = $.Deferred();
+    window.clearTimeout(window.repop);
+
+    window.repop = setTimeout(function(){
       window.popcorn = Popcorn.smart("#video", xxx.tube);
       setTimeout(function(){
 	$('#canvas').attr('width', $('#video').width()).attr('height', $('#video').height() - 50)
@@ -665,13 +674,13 @@ if (Meteor.is_client) {
 	  .css('left', $('#video').offset().left);
       },1000);
       window.pop.resolve();
-    },0);
+    }, 3000);
   };
 
   Template.main.preserve({
-      ".marks": function(node){         
-        return node;
-      }
+    ".marks": function(node){         
+      return '.marks';
+    }
   });
 
   Template.marks.marks = function () {
@@ -717,6 +726,29 @@ if (Meteor.is_client) {
     'click .alert': function() {
       popcorn.currentTime(this.start);
     },
+    'click span.badge-warning': function(e) {
+      var t = prompt('edit', this.text.replace(/\n/gim, ''));
+      if (!t) {
+          return;
+      }
+      var theone = dbalbums.findOne({key: window.getkey()});
+      var that = this;
+
+      theone.marks = $.map(theone.marks, function(x){
+	if (window.equals(x, that)) {
+          that.text = t;
+	  return that;
+	}
+	return x;
+      });
+      
+      Meteor.call('saveAlbum', theone,
+		  function(e, curs) {		
+                    window.restoreScroll();
+		    console.log('saved', arguments);
+		  });
+      
+    },
     'click span.badge-success': function(e) {
       console.log(e);
       var theone = dbalbums.findOne({key: window.getkey()});
@@ -735,9 +767,6 @@ if (Meteor.is_client) {
                     window.restoreScroll();
 		    console.log('saved', arguments);
 		  });
-
-
-
     },
     'click span.badge-info': function(e) {
       var theone = dbalbums.findOne({key: window.getkey()});
@@ -829,88 +858,101 @@ if (Meteor.is_client) {
   };
 
   Template.main.events = {
-    'click .lyrics': function(){
-      if (window.wait) {
-        window.lasttime = window.popcorn.currentTime();
-        window.lastplace = $('.lyrics')[0].selectionStart;
-        return;
+    'click #retube' : function () {
+      var theone = dbalbums.findOne({key: window.getkey()});
+      var newvid = prompt('enter video ID!');
+      if (newvid) {
+        theone.tube = newvid.length === 11 ? 'http://www.youtube.com/watch?v=' + newvid : 'http://vimeo.com/' + newvid;
+        Meteor.call('saveAlbum', theone,
+		    function(e, curs) {		
+		      console.log('saved', arguments);
+                      window.restoreScroll();
+		    });
       }
-      var thisplace = $('.lyrics')[0].selectionStart;
-      var thistime = window.popcorn.currentTime();
-      var subs = $('.lyrics').val().substring(window.lastplace, thisplace);
-      var mark = {
-        start: Math.max(0, window.lasttime - 1.4).toFixed(1),
-        end: Math.max(0, thistime - 1.4).toFixed(1),
-        text: '...' + subs
-      };
-      window.marks.push(mark);
-      window.popcorn = popcorn.subtitle($.extend(mark, {
-	display: "inline",
-	language: "en"
-      }));
 
-      window.lastplace = thisplace;
-      window.lasttime = thistime;
     },
+      'click .lyrics': function(){
+        if (window.wait) {
+          window.lasttime = window.popcorn.currentTime();
+          window.lastplace = $('.lyrics')[0].selectionStart;
+          return;
+        }
+        var thisplace = $('.lyrics')[0].selectionStart;
+        var thistime = window.popcorn.currentTime();
+        var subs = $('.lyrics').val().substring(window.lastplace, thisplace);
+        var mark = {
+          start: Math.max(0, window.lasttime - 1.4).toFixed(1),
+          end: Math.max(0, thistime - 1.4).toFixed(1),
+          text: '...' + subs
+        };
+        window.marks.push(mark);
+        window.popcorn = popcorn.subtitle($.extend(mark, {
+	  display: "inline",
+	  language: "en"
+        }));
+
+        window.lastplace = thisplace;
+        window.lasttime = thistime;
+      },
 
 
-    'click #save' : function () {
-      var theone = dbalbums.findOne({key: window.getkey()});
+      'click #save' : function () {
+        var theone = dbalbums.findOne({key: window.getkey()});
 
-      theone.lyrics = $('.lyrics').val();
+        theone.lyrics = $('.lyrics').val();
 
-      theone.marks = window.marks;
-      theone.sylz = window.sylz;
+        theone.marks = window.marks;
+        theone.sylz = window.sylz;
 
-      Meteor.call('saveAlbum', theone,
-		  function(e, curs) {		
-		    console.log('saved', arguments);
+        Meteor.call('saveAlbum', theone,
+		    function(e, curs) {		
+		      console.log('saved', arguments);
                       window.restoreScroll();
-		  });
-      
-    },
+		    });
+        
+      },
 
-    'click #reset' : function () {
-      var theone = dbalbums.findOne({key: window.getkey()});
-      theone.sylz = [];
-      theone.marks = [];
+      'click #reset' : function () {
+        var theone = dbalbums.findOne({key: window.getkey()});
+        theone.sylz = [];
+        theone.marks = [];
 
-      Meteor.call('saveAlbum', theone,
-		  function(e, curs) {		
-		    console.log('saved', arguments);
-		    window.popcorn = Popcorn.youtube("#video", alb.tube);
+        Meteor.call('saveAlbum', theone,
+		    function(e, curs) {		
+		      console.log('saved', arguments);
+		      window.popcorn = Popcorn.youtube("#video", alb.tube);
                       window.restoreScroll();
-		  });
-    },
-    'click #reload' : function () {
-      var theone = dbalbums.findOne({key: window.getkey()});
-      dbalbums.remove(theone);
+		    });
+      },
+      'click #reload' : function () {
+        var theone = dbalbums.findOne({key: window.getkey()});
+        dbalbums.remove(theone);
 
-      setTimeout(function(){
-              location.reload();
-      }, 5000);
-    },
-    'click #wait' : function () {
-      window.wait = !window.wait;
-      if (window.wait) {
+        setTimeout(function(){
+          location.reload();
+        }, 5000);
+      },
+      'click #wait' : function () {
+        window.wait = !window.wait;
+        if (window.wait) {
           $('#wait').css('background-color', 'red');
-      }
-      else {
+        }
+        else {
           $('#wait').css('background-color', 'white');
+        }
+      },
+      'click #next' : function () {
+        var next = window.tracks[window.clean(window.song)];
+        location.href = '/' + 
+	  window.mode + '/' + 
+	  encodeURIComponent(window.artist) + '/' +
+	  encodeURIComponent(window.album) + '/' + 
+	  encodeURIComponent(next),
+        { trigger: true };
       }
-    },
-    'click #next' : function () {
-      var next = window.tracks[window.clean(window.song)];
-      location.href = '/' + 
-	window.mode + '/' + 
-	encodeURIComponent(window.artist) + '/' +
-	encodeURIComponent(window.album) + '/' + 
-	encodeURIComponent(next),
-      { trigger: true };
-    }
 
-  };
-}
+    };
+  }
 
 if (Meteor.is_server) {
 /*  Meteor.headly.config({tags: function(req, returnf){

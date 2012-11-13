@@ -5310,6 +5310,7 @@ var googleCallback;
         };
 
         ctxContainer.id = id || Popcorn.guid();
+        ctxContainer.className += ' subcont';
         style.position = "absolute";
         style.color = "white";
         style.textShadow = "black 2px 2px 6px";
@@ -5379,6 +5380,7 @@ var googleCallback;
       _setup: function( options ) {
         var newdiv = document.createElement( "div" );
         newdiv.id = "subtitle-" + i++;
+        newdiv.className += ' subtitle';
         newdiv.style.display = "none";
 
         // Creates a div for all subtitles to use

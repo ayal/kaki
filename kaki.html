@@ -20,12 +20,12 @@
       </div>
       <div class="span5 r1 vidcont">
       {{> video}}
+      {{> marks}}
       {{/if}}
       </div>
       {{/each}}
       <div class="tracks span2 r1 trackscont">
       {{> tracks}}
-
       <div>>> >>>>>>>>>>> >>></div>
       <div>>> in the kaki >>></div>
       {{> songs}}
@@ -40,6 +40,7 @@
     <button id="reset">X Marks</button>
     <button id="reload">Reload</button>
     <button id="wait">WAIT!</button>
+    <button id="retube">re-tube</button>
 </template>
 
 <template name="tracks">
@@ -57,15 +58,16 @@
 </template>
 
 <template name="video">
-    <div id="video" class="video">{{video}}</div>
-    {{> marks}}
+    <div id="video" class="video">{{{video}}}</div>
 </template>
+
 <template name="marks">
   <div class="marks">
     {{#each marks}}
     <div class="mark">
       <span class="badge badge-success">{{start}}</span>
       <span class="badge badge-info">{{end}}</span>
+      <span class="badge badge-warning">edit</span>
       <div class="alert">
 	<button type="button" class="close" data-dismiss="alert">x</button>
       {{text}}
