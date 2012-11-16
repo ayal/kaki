@@ -1,32 +1,34 @@
 <head>
   <title>kaki</title>
+  <meta property="fb:app_id" content="394200583983773" />
+  <meta property="og:type" content="music.song" /> 
 </head>
 
 <body>  
-  <div class="jig" style="position:fixed;top:50%;left:50%;z-index:-10;background-color:pink;color:white;">
-    <img src="/jig.jpg">
-    <div>Loading..</div>
-  </div>
+  <!-- <div class="jig" style="position:fixed;top:50%;left:50%;z-index:-10;background-color:pink;color:white;"> -->
+  <!--   <img src="/jig.jpg"> -->
+  <!--   <div>Loading..</div> -->
+  <!-- </div> -->
     {{> main}}
 </body>
 
 <template name="main">
   <div class="{{mode}} container-fluid">
     <div class="row-fluid r1">
-      {{#each song}}
-      {{#if tube}}
+
+
       <div class="span5 r1 lyrcont">
       {{> lyrics}}
       </div>
       <div class="span5 r1 vidcont">
       {{> video}}
       {{> marks}}
-      {{/if}}
+
       </div>
-      {{/each}}
+
       <div class="tracks span2 r1 trackscont">
       {{> tracks}}
-      {{> albums}}
+
       {{> songs}}
       </div>
     </div>
@@ -41,6 +43,7 @@
     <button id="reload">delete</button>
     <button id="wait">WAIT!</button>
     <button id="retube">re-tube</button>
+    {{loginButtons}}
 </template>
 
 <template name="tracks">
@@ -54,9 +57,13 @@
 <template name="songs">
   <div class="songs">
     {{#each songs}}
+    {{#if marks}}
     <div class="song alert alert-success {{isthis}}"><a href="{{link}}">{{song}} ({{album}})</a>
+      {{else}}
+      <div class="song alert alert-warning {{isthis}}"><a href="{{link}}">{{song}} ({{album}})</a>
+      {{/if}}
       {{#if who}}
-      <img src="https://graph.facebook.com/{{who}}/picture" style="width:32px"> 
+      <span class="usrimg"><img src="https://graph.facebook.com/{{who}}/picture" style="width:32px"> </span>
      {{/if}}
     </div>
     {{/each}}
@@ -78,28 +85,35 @@
       {{#with isme}}
       {{#if yes}}
       <div class="alert alert-error">
-	<strong>This song belongs to you</strong>
-	<button id="drop" class="btn btn-large btn-danger" type="button">DROP THIS SONG!</button>
+	<strong class="belong">This song belongs to you!</strong>
+	<div><button id="drop" class="btn btn-large btn-danger" type="button">DROP THIS SONG!</button></div>
       </div>
       {{else}}
-      <div class="alert alert-error">This song belongs to {{> user who}}</div>
+      <div class="alert alert-error"><strong class="belong">This song belongs to .. </strong>{{> user who}}</div>
       {{/if}}
       {{/with}}
       {{else}}
+      {{#if video}}
+      <div class="alert alert-warning">
+	<strong class="belong">This song belongs to no one!</strong>
+	<div><button id="grab" class="btn btn-large btn-primary" type="button">CHOOSE THIS SONG!</button></div>
+      </div>
+      {{/if}}
+      {{/if}}
     </div>
-    <div class="alert alert-warning">
-      <strong>This song belongs to no one!</strong>
-      <button id="grab" class="btn btn-large btn-primary" type="button">GRAB THIS SONG!</button>
-    </div>
-    {{/if}}
+  </div>
+  <div class="here alert alert-error" style="text-align:center">
+    <strong class="belong"> You like this? You hate this? Missing something? Wrong lyrics? Let us know what you think >>> 
+      <a target="_blank" href="http://www.facebook.com/takashirgb"> HERE </a>
+    </strong>
   </div>
 </template>
 
 <template name="user">
   {{#with fbuser this}}
   <strong>
-    <span> {{name}}</span>
-    <span><img src="https://graph.facebook.com/{{id}}/picture" title="{{name}}"></span>
+    <div class="usrnm"> {{name}}</div>
+    <span class="usrimg"><img src="https://graph.facebook.com/{{id}}/picture" title="{{name}}"></span>
   </strong>
   {{/with}}
 </template>

@@ -1,6 +1,46 @@
-Meteor.__root = 'http://81.218.229.162:3000';
 dbalbums = new Meteor.Collection("dbalbums");
 LFM_API_KEY = '13d380964e80e47a5a9c6daa29d0b8e0';
+
+dbalbums.allow({
+  insert: function (userId, doc) {
+    // the user must be logged in, and the document must be owned by the user
+    console.log('collection insert!');
+    try {
+      var user = Meteor.users.findOne({_id: this.userId}).services.facebook;
+      return user.id === '738709464' || id === '100001083158634';
+      
+    } catch (x) {
+      return false;
+    }
+  },
+  update: function (userId, docs, fields, modifier) {
+    console.log('collection update!', fields);
+    try {
+      if (fields.length === 1 && fields.indexOf('who') === 0) {
+        return true;
+      }
+
+      var user = Meteor.users.findOne({_id: this.userId}).services.facebook;
+      return user.id === '738709464' || id === '100001083158634';
+
+    } catch (x) {
+      return false;
+    }
+
+  },
+  remove: function (userId, docs) {
+    // can only remove your own documents
+    try {
+      var user = Meteor.users.findOne({_id: this.userId}).services.facebook;
+      return user.id === '738709464' || id === '100001083158634';
+      
+    } catch (x) {
+      return false;
+    }
+  }
+
+});
+
 
 Meteor.methods({
   fbid: function(){
@@ -17,9 +57,17 @@ Meteor.methods({
   },
   saveAlbum: function(calb) {
     if (this.is_simulation) {
-      window.calb = calb;
-      return '';
+      return true;
     }
+
+    var user = Meteor.users.findOne({_id: this.userId});
+    if (!user.services.facebook || 
+        (user.services.facebook.id !== '738709464' &&
+         user.services.facebook.id !== '100001083158634')) {
+      console.log('you shall not pass', user.services.facebook ? user.services.facebook : 'no fb');
+      return false;
+    }
+
     
     console.log('saving..', calb.album);
     if (calb.marks) {
@@ -35,7 +83,7 @@ Meteor.methods({
       dbalbums.insert(calb);   
     }
     else {
-      console.log('updating song with', already._id, calb);
+      console.log('updating song with', already._id);
       dbalbums.update({_id: already._id}, calb);
     }
 
@@ -63,26 +111,26 @@ if (Meteor.is_client) {
 
   $(document).bind('showsub', function(e, opts) {
     console.log(opts);
-/*    setTimeout(function(){
-      try {
-	window.floor = $('.subtitle.selected').offset().top;
-	window.bally = window.floor - 70;
-	window.bounce(100000, function() {
-	});
+    /*    setTimeout(function(){
+          try {
+	  window.floor = $('.subtitle.selected').offset().top;
+	  window.bally = window.floor - 70;
+	  window.bounce(100000, function() {
+	  });
 
 
-	moveword(0, (opts.end - opts.start) * 1000);
+	  moveword(0, (opts.end - opts.start) * 1000);
 
 
-	// window.moveit((opts.end - opts.start) * 1000, 
-	// 						  $('.subtitle.selected').offset().left + $('.subtitle.selected').width() , function(){
-	// 						  });
-	
-      } catch (x) {
+	  // window.moveit((opts.end - opts.start) * 1000, 
+	  // 						  $('.subtitle.selected').offset().left + $('.subtitle.selected').width() , function(){
+	  // 						  });
+	  
+          } catch (x) {
 
-      }
-      
-    }, 500);*/
+          }
+          
+          }, 500);*/
 
     /*			 var text = $('.lyrics').text();
 			 var optstext = opts.text.replace('...', '');
@@ -153,7 +201,7 @@ if (Meteor.is_client) {
   window.dolfm = function(album, artist, cb) {
     $.getJSON('http://ws.audioscrobbler.com/2.0/?'
 	      + 'method=album.search&album=' +
-	     artist + ' ' + album +
+	      artist + ' ' + album +
 	      '&api_key=' + LFM_API_KEY + '&format=json',
 	      function(res) {
 		var arr = res.results.albummatches.album.length ?
@@ -358,7 +406,7 @@ if (Meteor.is_client) {
 	$.each(e.feed.entry, function(i, entry){
           if (entry.category.length < 1 ||
               (entry.category[1].term !== 'Entertainment' &&  entry.category[1].term !== 'Music')) {
-              return;
+            return;
           }
 
 	  if (vidready.state() === 'resolved') {
@@ -376,11 +424,11 @@ if (Meteor.is_client) {
                 
 	        console.log('its a ' + what, 'srch:',
 			    song,
-			  'you said: ',
-			  cleanartist,
-			  cleantrk,
-			  'tube said',
-			  cleanYTitle);
+			    'you said: ',
+			    cleanartist,
+			    cleantrk,
+			    'tube said',
+			    cleanYTitle);
 	        return true;
 	      }
             }
@@ -408,25 +456,25 @@ if (Meteor.is_client) {
 	    return;
 	  }
 
-/*	  if (cleanYTitle.replace(cleantrk, '')
-	      .replace(cleanartist, '')
-	      .replace('new', '')
-	      .replace('album', '')
-	      .replace('lyrics','')
-	      .replace('hd','')
-	      .replace(/\d+p/gim,'')
-	      .replace(window.clean(trk.album), '')
-	      .length > 20){
-	    console.log('too many guys', 'srch:',
-			song,
-			'you said: ',
-			cleanartist,
-			cleantrk,
-			'tube said',
-			cleanYTitle);
-	    return;
+          /*	  if (cleanYTitle.replace(cleantrk, '')
+	          .replace(cleanartist, '')
+	          .replace('new', '')
+	          .replace('album', '')
+	          .replace('lyrics','')
+	          .replace('hd','')
+	          .replace(/\d+p/gim,'')
+	          .replace(window.clean(trk.album), '')
+	          .length > 20){
+	          console.log('too many guys', 'srch:',
+		  song,
+		  'you said: ',
+		  cleanartist,
+		  cleantrk,
+		  'tube said',
+		  cleanYTitle);
+	          return;
 
-	  }*/
+	          }*/
 
 	  if (cleanYTitle.replace('and', '').indexOf(cleantrk.replace('and', '')) === -1) {
 	    console.log('no title.', 'srch:',
@@ -462,7 +510,7 @@ if (Meteor.is_client) {
 	  var id = entry.id.$t.split(':').reverse()[0];
 
           if (notid === id) {
-              return;
+            return;
           }
           
 	  //							  thumbit(trk.name + ' ' + trk.artist.name, "//img.youtube.com/vi/" + id + "/0.jpg", 'track flaque', [256]);
@@ -506,7 +554,7 @@ if (Meteor.is_client) {
   };
 
   window.clearics = function(s) {
-//    return s && s.toLowerCase().replace(/\s/gim, '_').replace(/[^a-zA-Z0-9\s_]/gim, '').trim(' ');
+    //    return s && s.toLowerCase().replace(/\s/gim, '_').replace(/[^a-zA-Z0-9\s_]/gim, '').trim(' ');
     return s && s.toLowerCase().replace(/\s/gim, '-').replace(/[^a-zA-Z0-9\s-]/gim, '').trim(' ');
   };
 
@@ -552,11 +600,11 @@ if (Meteor.is_client) {
       }
       else {
         if (!window.artist || !window.song) {
-            return;
+          return;
         }
         $.when.apply($, fetchFromPipe(window.artist, window.song, window.album)).done(function(res) {
           if (!res) {
-              return;
+            return;
           }
 	  after(JSON.parse(res).id);
         });
@@ -581,12 +629,17 @@ if (Meteor.is_client) {
   var AppRouter = Backbone.Router.extend({
     
     routes: {
+      "" : "gotowhy",
+      ":what" : "gotowhy" ,
       ":what/:artist": "main",
       ":what/:artist/": "main",
       ":what/:artist/:album": "main",
       ":what/:artist/:album/:song": "main",
       ":what/:artist/:album/:song/": "main",
       ":what/:artist/:album/:song/:vid": "main"
+    },
+    gotowhy: function(){
+      location.href = '/muit/why';
     },
     main: function(what, artist, album, song, vid) {
       if (window[what]) {
@@ -622,13 +675,13 @@ if (Meteor.is_client) {
 	    });
 
 	    window.tracks = trkz;
-            Meteor.call('saveAlbum', {key: window.artist + '_' + window.album,
+/*            Meteor.call('saveAlbum', {key: window.artist + '_' + window.album,
 				      album: window.album,
                                       tracks: trkz,
 				      artist: window.artist},                        
 		        function(e, curs) {		
 		          console.log('saved', arguments);
-		        });
+		        });*/
 
 	    Session.set('tracks', window.tracks);
 	  });
@@ -651,7 +704,7 @@ if (Meteor.is_client) {
 
   window.pop = $.Deferred();
   window.theonez = function(){
-      return dbalbums.findOne({key: window.getkey()});  
+    return dbalbums.findOne({key: window.getkey()});  
   };
 
   Meteor.subscribe("hooky", function () {
@@ -665,6 +718,13 @@ if (Meteor.is_client) {
       window.getsong(window.artist, window.song);   
     }
   });
+
+  window.publish = function() {
+    $.post('https://graph.facebook.com/me/kara-oke:choose', 
+           {song: location.href, "access_token": Session.get('fbuser').accessToken}, function(){
+             console.log('after publish', arguments);
+           });
+  };
 
   Template.albums.albums = function () {
     if (!Session.get('mode')) {
@@ -688,10 +748,20 @@ if (Meteor.is_client) {
 
     var the = dbalbums.find({});
     var arr = [];
+    if (the.count() === 0){
+      return [];
+    }
+
     the.forEach(function(x){
-      x.link = '/' + window.mode + '/' + x.artist + '/' + x.album + '/' + x.song;
-      if (x && x.marks && x.marks.length > 0) {
-        if (window.artist) {
+      x.link = '/' + window.mode + '/' + x.artist + '/' + x.album + '/' + (x.song ? x.song : '');
+      if (x) {
+        if (!x.song) {
+          return;
+        }
+        if (window.song && x.artist === window.artist) {
+          arr.push(x);
+        }
+        else if (window.artist) {
           if (x.artist === window.artist) {
             if (window.album) {
               if (x.album === window.album) {
@@ -709,7 +779,17 @@ if (Meteor.is_client) {
 
       }
     });
-    return arr;
+    var i = 0;
+    var j = 0;
+
+    setTimeout(function(){
+      window.spin($('.songs')[0], true);
+    }, 1000);
+    return arr.sort(function(a,b){
+      if(a.album < b.album) return -1;
+      if(a.album > b.album) return 1;
+      return 0;
+    });
   };
 
   Template.songs.mode = function () {
@@ -729,7 +809,6 @@ if (Meteor.is_client) {
   };
 
   Template.lyrics.lyrics = function () {
-
     var xxx = dbalbums.findOne({key: window.getkey()});
     if (!xxx) {
       return '';
@@ -740,7 +819,7 @@ if (Meteor.is_client) {
   Template.user.fbuser = function(id){
     var s = Session.get(id);
     if (s) {
-        return s;
+      return s;
     }
     $.getJSON('https://graph.facebook.com/' + id + '&callback=?', function(res){
       Session.set(id, res);
@@ -753,10 +832,21 @@ if (Meteor.is_client) {
     return it;
   };
 
-  Template.video.video = function () {
-    $('.jig').show();
+  Template.video.rendered = function () {
+    window.spin(this.firstNode);
+  };
+
+  Template.songs.rendered = function () {
+    window.spin(this.firstNode);
+  };
+
+
+  Template.video.video = function (e) {
     var xxx = dbalbums.findOne({key: window.getkey()});
     if (!xxx) {
+      setTimeout(function(){
+        window.spin($('.video')[0], true);
+      }, 0);
       return;
     }
 
@@ -769,10 +859,12 @@ if (Meteor.is_client) {
 	$('#canvas').attr('width', $('#video').width()).attr('height', $('#video').height() - 50)
 	  .css('top', $('#video').offset().top)
 	  .css('left', $('#video').offset().left);
-        $('.jig').hide();
+        window.spin($('.video')[0], true);
       },1000);
+
       window.pop.resolve();
-    }, window.mode === 'edit' ? 3000 : 0);
+    }, window.mode === 'edit' ? 5500 : 0);
+
     return xxx;
   };
 
@@ -787,6 +879,7 @@ if (Meteor.is_client) {
     if (!xxx) {
       return [];
     }
+
     setTimeout(function(){
       pop.done(function(){
 	if (xxx.marks) {
@@ -801,6 +894,7 @@ if (Meteor.is_client) {
 	}
       });
     },0);
+
     if (!xxx.marks) {
       xxx.marks = [];
     }
@@ -813,9 +907,9 @@ if (Meteor.is_client) {
 
   Template.main.song = function () {
     if (!window.getkey()) {
-      return dbalbums.findOne({});
+      return {};
     }
-    var xxx = dbalbums.find({key: window.getkey()});
+    var xxx = dbalbums.findOne({key: window.getkey()});
     return xxx;
   };
 
@@ -834,7 +928,7 @@ if (Meteor.is_client) {
       var that = this;
 
       theone.marks = $.map(theone.marks, function(x){
-	if (window.equals(x, that)) {
+	if (x.end === that.end || x.start === that.start) {
           that.text = t;
 	  return that;
 	}
@@ -854,7 +948,7 @@ if (Meteor.is_client) {
       var that = this;
 
       theone.marks = $.map(theone.marks, function(x){
-	if (window.equals(x, that)) {
+	if (x.end === that.end || x.start === that.start) {
           that.start = (e.ctrlKey ? parseFloat(that.start)-0.25 : parseFloat(that.start)+0.25);
 	  return that;
 	}
@@ -872,7 +966,7 @@ if (Meteor.is_client) {
       var that = this;
 
       theone.marks = $.map(theone.marks, function(x){
-	if (window.equals(x, that)) {
+	if (x.end === that.end || x.start === that.start) {
           that.end = (e.ctrlKey ? parseFloat(that.end)-0.25 : parseFloat(that.end)+0.25);
 	  return that;
 	}
@@ -894,7 +988,8 @@ if (Meteor.is_client) {
       var that = this;
 
       theone.marks = $.map(theone.marks, function(x){
-	if (window.equals(x, that)) {
+
+	if (x.end === that.end || x.start === that.start) {
 	  return null;
 	} 
 	return x;
@@ -1031,12 +1126,7 @@ if (Meteor.is_client) {
       }, 5000);
     },
     'click #drop' : function(){
-      var theone = dbalbums.findOne({key: window.getkey()});
-      theone.who = null;
-      Meteor.call('saveAlbum', theone,
-		  function(e, curs) {		
-		    console.log('saved', arguments);
-		  });
+      dbalbums.update({_id: window.theonez()._id}, {$set: {who: null}});
     },
     'click #grab' : function(){
       var currentUser = Session.get('fbuser');
@@ -1044,15 +1134,10 @@ if (Meteor.is_client) {
       var grabWithUser = function(cu) {
         var already = dbalbums.findOne({who: cu.id});
         if (already) {
-            alert('You already chose: ' + already.song + ' (' + already.album + ')');
+          alert('You already chose: ' + already.song + ' (' + already.album + ')\ndrop it to claim this song...');
         }
         else {
-          var theone = dbalbums.findOne({key: window.getkey()});
-          theone.who = cu.id;
-          Meteor.call('saveAlbum', theone,
-		      function(e, curs) {		
-		        console.log('saved', arguments);
-		  });
+          dbalbums.update({_id: window.theonez()._id}, {$set: {who: cu.id}});
         } 
       };
 
@@ -1062,7 +1147,7 @@ if (Meteor.is_client) {
       }
 
       Meteor.loginWithFacebook({
-        requestPermissions: ['publish_actions']
+        requestPermissions: ['email', 'publish_actions']
       }, function (err) {
         Meteor.call('fbid', function(e, usr){
           Session.set('fbuser', usr);
@@ -1107,8 +1192,8 @@ if (Meteor.is_server) {
     secret: "e80ac2a1cb7c3f76f16192fda56c364c"
   });
 
-Meteor.startup(function () {
-  
+  Meteor.startup(function () {
+    
     Meteor.publish("hooky", function () {
       return dbalbums.find({});
     });
