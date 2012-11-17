@@ -1,7 +1,8 @@
 <head>
-  <title>kaki</title>
+  <title>Kaki Karaoke</title>
   <meta property="fb:app_id" content="394200583983773" />
   <meta property="og:type" content="music.song" /> 
+  <meta property="og:description" content="KAKI - Karaoke from the PHUTURE" />
 </head>
 
 <body>  
@@ -10,8 +11,18 @@
   <!--   <div>Loading..</div> -->
   <!-- </div> -->
     {{> main}}
+
+  <div id="fb-root"></div>
+  <script></script>
+
+  {{> comments}}
 </body>
 
+<template name="comments">
+  <div class="modal fbcomments" style="display:none">
+    <div class="fb-comments" data-href="{{url}}" data-num-posts="2" data-width="470"></div>
+  </div>
+</template>
 <template name="main">
   <div class="{{mode}} container-fluid">
     <div class="row-fluid r1">
@@ -89,7 +100,7 @@
 	<div><button id="drop" class="btn btn-large btn-danger" type="button">DROP THIS SONG!</button></div>
       </div>
       {{else}}
-      <div class="alert alert-error"><strong class="belong">This song belongs to .. </strong>{{> user who}}</div>
+      <div class="alert alert-error"><strong class="belong">This song belongs to ... </strong>{{> user who}}</div>
       {{/if}}
       {{/with}}
       {{else}}
@@ -98,12 +109,17 @@
 	<strong class="belong">This song belongs to no one!</strong>
 	<div><button id="grab" class="btn btn-large btn-primary" type="button">CHOOSE THIS SONG!</button></div>
       </div>
+      {{else}}
+      <div class="alert alert-warning">
+	<strong class="">CHOOSE YOUR SONG FOR WHY? KARAOKE @ OZENBAR 1.12.12! >>>> </strong>
+      </div>
       {{/if}}
       {{/if}}
     </div>
   </div>
   <div class="here alert alert-error" style="text-align:center">
-    <strong class="belong"> You like this? You hate this? Missing something? Wrong lyrics? Let us know what you think >>> 
+    <div class="fb-like" data-href="http://kaki.meteor.com/muit/why/" data-send="false" data-layout="button_count" data-width="100" data-show-faces="true"></div>
+    <strong class="likethis"> Like this? Hate this? Missing something? Say it >>> 
       <a target="_blank" href="http://www.facebook.com/takashirgb"> HERE </a>
     </strong>
   </div>

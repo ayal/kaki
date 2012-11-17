@@ -6,8 +6,8 @@ dbalbums.allow({
     // the user must be logged in, and the document must be owned by the user
     console.log('collection insert!');
     try {
-      var user = Meteor.users.findOne({_id: this.userId}).services.facebook;
-      return user.id === '738709464' || id === '100001083158634';
+      var user = Meteor.users.findOne({_id: userId}).services.facebook;
+      return user.id === '738709464' || user.id === '100001083158634';
       
     } catch (x) {
       return false;
@@ -20,8 +20,8 @@ dbalbums.allow({
         return true;
       }
 
-      var user = Meteor.users.findOne({_id: this.userId}).services.facebook;
-      return user.id === '738709464' || id === '100001083158634';
+      var user = Meteor.users.findOne({_id: userId}).services.facebook;
+      return user.id === '738709464' || user.id === '100001083158634';
 
     } catch (x) {
       return false;
@@ -30,10 +30,11 @@ dbalbums.allow({
   },
   remove: function (userId, docs) {
     // can only remove your own documents
+    console.log('collection remove');
     try {
-      var user = Meteor.users.findOne({_id: this.userId}).services.facebook;
-      return user.id === '738709464' || id === '100001083158634';
-      
+      var user = Meteor.users.findOne({_id: userId}).services.facebook;
+      console.log('collection remove user id', userId, user.id);
+      return user.id === '738709464' || user.id === '100001083158634';
     } catch (x) {
       return false;
     }
@@ -93,6 +94,37 @@ Meteor.methods({
 
 
 if (Meteor.is_client) {
+
+  Meteor._reload.onMigrate(function () {
+    return false;
+  });
+
+  Meteor.startup(function () {
+    window.fbAsyncInit = function(){
+
+      FB.XFBML.parse();  
+      FB.init({
+	appId      : '394200583983773', // App ID
+	status     : true, // check login status
+	cookie     : true, // enable cookies to allow the server to access the session
+	xfbml      : true  // parse XFBML
+      });
+      FB.getLoginStatus(function(response) {
+
+      });
+    };
+
+    (function(d, s, id) {
+      var js, fjs = d.getElementsByTagName(s)[0];
+      if (d.getElementById(id)) return;
+      js = d.createElement(s); js.id = id;
+      js.src = "//connect.facebook.net/en_US/all.js#xfbml=1&appId=394200583983773";
+      fjs.parentNode.insertBefore(js, fjs);
+    }(document, 'script', 'facebook-jssdk'));
+
+    
+  });
+  
   window.moveword = function(i, time, stop) {
     var text = $('.subtitle.selected').text();
     var words = text.split(' ');
@@ -633,9 +665,11 @@ if (Meteor.is_client) {
       ":what" : "gotowhy" ,
       ":what/:artist": "main",
       ":what/:artist/": "main",
+      ":what/:artist/?:query": "main",
       ":what/:artist/:album": "main",
       ":what/:artist/:album/:song": "main",
       ":what/:artist/:album/:song/": "main",
+      ":what/:artist/:album/:song/?:query": "main",
       ":what/:artist/:album/:song/:vid": "main"
     },
     gotowhy: function(){
@@ -643,20 +677,24 @@ if (Meteor.is_client) {
     },
     main: function(what, artist, album, song, vid) {
       if (window[what]) {
-        $('head').append($('<meta property="og:title" content="' + artist + ' - ' + song + ' @ KAKI" />'));
+        $('head').append($('<meta property="og:title" content="' + artist + ' - ' + (song ? song : 'KARAOKE') + ' ~~ " />'));
         $('head').append($('<meta property="og:image" content="http://kaki.meteor.com/jig.jpg" />'));
 
 	window.artist = artist && decodeURIComponent(artist);
-	window.album = album && decodeURIComponent(album);
+	window.album = album && album.indexOf('=') === -1 ? decodeURIComponent(album) : null;
 	window.song = song && decodeURIComponent(song);
+        if (window.song && window.song.indexOf('?')) {
+            window.song = decodeURIComponent(window.song.split('?')[0]);
+        }
 	window.mode = what;
         Session.set('mode', what);
-        window.vid = vid;
+        window.vid = vid && vid.indexOf('=') !== -1 ? vid : null;
 
 	window[what](artist, album, song);   
         Session.set('thekey', window.clean(window.artist) + '_' + window.clean(window.song));
-        if (album) {
-          dolfm(album, artist, function(trkz) {
+
+        if (window.album) {
+          dolfm(window.album, artist, function(trkz) {
 	    trkz = trkz.album.tracks.track.length ? $.map(trkz.album.tracks.track, function(tr){
               var name = tr.name ? tr.name.toLowerCase() : tr.toLowerCase();
               name = name.replace('&', 'and');
@@ -675,13 +713,13 @@ if (Meteor.is_client) {
 	    });
 
 	    window.tracks = trkz;
-/*            Meteor.call('saveAlbum', {key: window.artist + '_' + window.album,
-				      album: window.album,
-                                      tracks: trkz,
-				      artist: window.artist},                        
-		        function(e, curs) {		
+            /*            Meteor.call('saveAlbum', {key: window.artist + '_' + window.album,
+			  album: window.album,
+                          tracks: trkz,
+			  artist: window.artist},                        
+		          function(e, curs) {		
 		          console.log('saved', arguments);
-		        });*/
+		          });*/
 
 	    Session.set('tracks', window.tracks);
 	  });
@@ -706,6 +744,7 @@ if (Meteor.is_client) {
   window.theonez = function(){
     return dbalbums.findOne({key: window.getkey()});  
   };
+  
 
   Meteor.subscribe("hooky", function () {
     Meteor.call('fbid', function(e, usr){
@@ -724,6 +763,14 @@ if (Meteor.is_client) {
            {song: location.href, "access_token": Session.get('fbuser').accessToken}, function(){
              console.log('after publish', arguments);
            });
+  };
+
+  Template.comments.url = function () {
+    var x = Session.get('thekey');
+    setTimeout(function(){
+      FB && FB.XFBML.parse();
+    }, 1000);
+    return 'http://' + location.host + '/' + window.mode + '/' + window.artist + '/';
   };
 
   Template.albums.albums = function () {
@@ -859,8 +906,8 @@ if (Meteor.is_client) {
       window.popcorn = Popcorn.smart("#video", xxx.tube);
       window.popcorn.media.addEventListener("ended", function() {
         var loc = ($('.song.selected').next() ? 
-          $('.song.selected').next().find('a').attr('href') : 
-          $('.song').find('a').attr('href'));
+                   $('.song.selected').next().find('a').attr('href') : 
+                   $('.song').find('a').attr('href'));
 
         window.app_router.navigate(loc, { trigger: true });
       });
@@ -1067,6 +1114,11 @@ if (Meteor.is_client) {
   };
 
   Template.main.events = {
+    'click .here' : function(e){
+      e.preventDefault();
+      $('.fbcomments').modal('show');
+      return false;
+    },
     'click #retube' : function () {
       var theone = dbalbums.findOne({key: window.getkey()});
       var newvid = prompt('enter video ID!');
@@ -1106,7 +1158,7 @@ if (Meteor.is_client) {
     'click .song' : function(e){
       e.preventDefault();
       window.app_router.navigate($(e.currentTarget).find('a').attr('href'), { trigger: true });
-
+      return false;
     },
 
     'click #save' : function () {
@@ -1158,6 +1210,7 @@ if (Meteor.is_client) {
         }
         else {
           dbalbums.update({_id: window.theonez()._id}, {$set: {who: cu.id}});
+          window.publish();
         } 
       };
 
@@ -1194,8 +1247,7 @@ if (Meteor.is_client) {
 	window.mode + '/' + 
 	encodeURIComponent(window.artist) + '/' +
 	encodeURIComponent(window.album) + '/' + 
-	encodeURIComponent(next),
-      { trigger: true };
+	encodeURIComponent(next);
     }
 
   };
@@ -1205,15 +1257,13 @@ if (Meteor.is_server) {
 
   Accounts.loginServiceConfiguration.remove({});
 
-
   Accounts.loginServiceConfiguration.insert({
     service: "facebook",
     appId: "394200583983773",
     secret: "e80ac2a1cb7c3f76f16192fda56c364c"
   });
 
-  Meteor.startup(function () {
-    
+  Meteor.startup(function () {    
     Meteor.publish("hooky", function () {
       return dbalbums.find({});
     });
