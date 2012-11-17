@@ -730,6 +730,7 @@ if (Meteor.is_client) {
 
   });
 
+  window.mobile = /Android|webOS|iPhone|iPod|BlackBerry/i.test(navigator.userAgent);
   window.app_router = new AppRouter();
 
   Backbone.history.start({pushState: true});
@@ -737,6 +738,9 @@ if (Meteor.is_client) {
   window.renderpop = function(){
 
     window.renderpop = $.noop();
+    if (window.mobile) {
+        return;
+    }
     window.popcorn = Popcorn.smart("#video", alb.tube);
   };
 
@@ -744,7 +748,6 @@ if (Meteor.is_client) {
   window.theonez = function(){
     return dbalbums.findOne({key: window.getkey()});  
   };
-  
 
   Meteor.subscribe("hooky", function () {
     Meteor.call('fbid', function(e, usr){
@@ -903,6 +906,10 @@ if (Meteor.is_client) {
     window.clearTimeout(window.repop);
 
     window.repop = setTimeout(function(){
+      if (window.mobile) {
+          return;
+      }
+
       window.popcorn = Popcorn.smart("#video", xxx.tube);
       window.popcorn.media.addEventListener("ended", function() {
         var loc = ($('.song.selected').next() ? 
