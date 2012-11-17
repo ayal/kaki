@@ -570,7 +570,7 @@ if (Meteor.is_client) {
     }
 
 
-    return window.clean(artist) + '_' + window.clean(song);
+    return Session.get('thekey');
   };
 
   window.getsong = function(artist, song) {
@@ -654,7 +654,7 @@ if (Meteor.is_client) {
         window.vid = vid;
 
 	window[what](artist, album, song);   
-
+        Session.set('thekey', window.clean(window.artist) + '_' + window.clean(window.song));
         if (album) {
           dolfm(album, artist, function(trkz) {
 	    trkz = trkz.album.tracks.track.length ? $.map(trkz.album.tracks.track, function(tr){
@@ -742,6 +742,7 @@ if (Meteor.is_client) {
   };
 
   Template.songs.songs = function () {
+    var theone = window.theonez();
     if (!Session.get('mode')) {
       return [];
     }
@@ -797,6 +798,7 @@ if (Meteor.is_client) {
   };
 
   Template.songs.isthis = function () {
+
     return window.song === this.song ? 'selected' : 'nothing';
   };
 
@@ -855,6 +857,13 @@ if (Meteor.is_client) {
 
     window.repop = setTimeout(function(){
       window.popcorn = Popcorn.smart("#video", xxx.tube);
+      window.popcorn.media.addEventListener("ended", function() {
+        var loc = ($('.song.selected').next() ? 
+          $('.song.selected').next().find('a').attr('href') : 
+          $('.song').find('a').attr('href'));
+
+        window.app_router.navigate(loc, { trigger: true });
+      });
       setTimeout(function(){
 	$('#canvas').attr('width', $('#video').width()).attr('height', $('#video').height() - 50)
 	  .css('top', $('#video').offset().top)
@@ -873,6 +882,13 @@ if (Meteor.is_client) {
       return '.marks';
     }
   });
+
+  Template.songs.preserve({
+    ".songs": function(node){         
+      return '.songs';
+    }
+  });
+
 
   Template.marks.marks = function () {
     var xxx = window.getkey() ? dbalbums.findOne({key: window.getkey()}) : dbalbums.findOne({});
@@ -1087,7 +1103,11 @@ if (Meteor.is_client) {
       window.lastplace = thisplace;
       window.lasttime = thistime + 0.4;
     },
+    'click .song' : function(e){
+      e.preventDefault();
+      window.app_router.navigate($(e.currentTarget).find('a').attr('href'), { trigger: true });
 
+    },
 
     'click #save' : function () {
       var theone = dbalbums.findOne({key: window.getkey()});
