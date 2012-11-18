@@ -100,6 +100,10 @@ if (Meteor.is_client) {
   });
 
   Meteor.startup(function () {
+    if (window.mobile) {
+      alert('HEYA! KAKI KARAOKE from mobile is not yet AMAZING.. if it doesn\'t work now, please try from home :)');
+    }
+
     window.fbAsyncInit = function(){
 
       FB.XFBML.parse();  
@@ -110,7 +114,7 @@ if (Meteor.is_client) {
 	xfbml      : true  // parse XFBML
       });
       FB.getLoginStatus(function(response) {
-
+        window.status = response;
       });
     };
 
@@ -676,8 +680,9 @@ if (Meteor.is_client) {
       location.href = '/muit/why';
     },
     main: function(what, artist, album, song, vid) {
+
       if (window[what]) {
-        $('head').append($('<meta property="og:title" content="' + artist + ' - ' + (song ? song : 'KARAOKE') + ' ~~ " />'));
+        $('head').append($('<meta property="og:title" content=" ~~~ ' + artist + ' - ' + (song ? song : '') + ' ~~~ KARAOKE ~~~ " />'));
         $('head').append($('<meta property="og:image" content="http://kaki.meteor.com/jig.jpg" />'));
 
 	window.artist = artist && decodeURIComponent(artist);
@@ -738,13 +743,9 @@ if (Meteor.is_client) {
   window.renderpop = function(){
 
     window.renderpop = $.noop();
-    if (window.mobile) {
-        return;
-    }
     window.popcorn = Popcorn.smart("#video", alb.tube);
   };
 
-  window.pop = $.Deferred();
   window.theonez = function(){
     return dbalbums.findOne({key: window.getkey()});  
   };
@@ -844,7 +845,7 @@ if (Meteor.is_client) {
   };
 
   Template.songs.mode = function () {
-    return window.mode;
+    return window.mobile ? window.mode + ' ' + 'mobile' : window.mode;
   };
 
   Template.songs.isthis = function () {
@@ -885,7 +886,10 @@ if (Meteor.is_client) {
   };
 
   Template.video.rendered = function () {
-    window.spin(this.firstNode);
+    var it = window.theonez();
+    if (it) {
+      window.spin(this.firstNode);   
+    }
   };
 
   Template.songs.rendered = function () {
@@ -902,14 +906,9 @@ if (Meteor.is_client) {
       return;
     }
 
-    window.pop = $.Deferred();
     window.clearTimeout(window.repop);
 
     window.repop = setTimeout(function(){
-      if (window.mobile) {
-          return;
-      }
-
       window.popcorn = Popcorn.smart("#video", xxx.tube);
       window.popcorn.media.addEventListener("ended", function() {
         var loc = ($('.song.selected').next() ? 
@@ -923,13 +922,28 @@ if (Meteor.is_client) {
 	  .css('top', $('#video').offset().top)
 	  .css('left', $('#video').offset().left);
         window.spin($('.video')[0], true);
+        window.renderMarks();
       },1000);
 
-      window.pop.resolve();
     }, window.mode === 'edit' ? 5500 : 0);
 
     return xxx;
   };
+
+  window.renderMarks = function(){
+    var xxx = window.theonez();
+    if (!xxx || !xxx.marks || !window.popcorn) {
+        return;
+    }
+
+    $.each(xxx.marks, function(i, mrk) {
+      mrk.start = parseFloat(mrk.start);
+      mrk.end = parseFloat(mrk.end);
+      window.popcorn = popcorn.subtitle(mrk);
+    });
+  };
+  
+
 
   Template.main.preserve({
     ".marks": function(node){         
@@ -945,25 +959,12 @@ if (Meteor.is_client) {
 
 
   Template.marks.marks = function () {
-    var xxx = window.getkey() ? dbalbums.findOne({key: window.getkey()}) : dbalbums.findOne({});
+    var xxx = window.theonez();
     if (!xxx) {
       return [];
     }
 
-    setTimeout(function(){
-      pop.done(function(){
-	if (xxx.marks) {
-
-	  window.marks = xxx.marks;
-	  
-	  $.each(xxx.marks, function(i, mrk) {
-            mrk.start = parseFloat(mrk.start);
-            mrk.end = parseFloat(mrk.end);
-	    window.popcorn = popcorn.subtitle(mrk);
-	  });
-	}
-      });
-    },0);
+    window.marks = xxx.marks;
 
     if (!xxx.marks) {
       xxx.marks = [];
@@ -972,7 +973,11 @@ if (Meteor.is_client) {
   };
 
   Template.main.mode = function () {
-    return window.mode || 'edit';
+    return window.mobile ? (window.mode + ' ' + 'mobile') : (window.mode || 'edit');
+  };
+
+  Template.main.mobile = function(){
+    return window.mobile;  
   };
 
   Template.main.song = function () {
@@ -980,6 +985,7 @@ if (Meteor.is_client) {
       return {};
     }
     var xxx = dbalbums.findOne({key: window.getkey()});
+
     return xxx;
   };
 
@@ -1226,10 +1232,15 @@ if (Meteor.is_client) {
         return;
       }
 
+      if (window.mobile) {
+        $('.video iframe').hide();   
+      }
+      
       Meteor.loginWithFacebook({
         requestPermissions: ['email', 'publish_actions']
       }, function (err) {
         Meteor.call('fbid', function(e, usr){
+          $('.video iframe').show();
           Session.set('fbuser', usr);
           grabWithUser(usr);
         });

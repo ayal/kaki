@@ -3,6 +3,7 @@
   <meta property="fb:app_id" content="394200583983773" />
   <meta property="og:type" content="music.song" /> 
   <meta property="og:description" content="KAKI - Karaoke from the PHUTURE" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 </head>
 
 <body>  
@@ -23,24 +24,30 @@
     <div class="fb-comments" data-href="{{url}}" data-num-posts="2" data-width="470"></div>
   </div>
 </template>
+
 <template name="main">
   <div class="{{mode}} container-fluid">
     <div class="row-fluid r1">
-
-
       <div class="span5 r1 lyrcont">
       {{> lyrics}}
       </div>
       <div class="span5 r1 vidcont">
-      {{> video}}
-      {{> marks}}
-
+	{{#if mobile}}
+	{{> video}}
+	{{> tracks}}
+	{{> songs}}
+	{{else}}
+	{{> video}}
+	{{> marks}}
+	{{/if}}
       </div>
 
       <div class="tracks span2 r1 trackscont">
-      {{> tracks}}
-
-      {{> songs}}
+	{{#if mobile}}
+	{{else}}
+	{{> tracks}}
+	{{> songs}}
+	{{/if}}
       </div>
     </div>
   </div>
@@ -74,7 +81,7 @@
       <div class="song alert alert-warning {{isthis}}"><a href="{{link}}">{{song}} ({{album}})</a>
       {{/if}}
       {{#if who}}
-      <span class="usrimg"><img src="https://graph.facebook.com/{{who}}/picture" style="width:32px"> </span>
+	<span class="usrimg"><img src="https://graph.facebook.com/{{who}}/picture" style="width:32px"></span>
      {{/if}}
     </div>
     {{/each}}
@@ -111,7 +118,12 @@
       </div>
       {{else}}
       <div class="alert alert-warning">
-	<strong class="">CHOOSE YOUR SONG FOR WHY? KARAOKE @ OZENBAR 1.12.12! >>>> </strong>
+	<strong class="">
+	  CHOOSE YOUR SONG FOR
+	  <a target="_blank" href="https://plus.google.com/u/0/events/cvhlcl1buo7n3b6ela2taesm24s">
+	     WHY? KARAOKE @ OZENBAR 1.12.12! >>>> 
+	  </a>
+	</strong>
       </div>
       {{/if}}
       {{/if}}
@@ -129,7 +141,9 @@
   {{#with fbuser this}}
   <strong>
     <div class="usrnm"> {{name}}</div>
-    <span class="usrimg"><img src="https://graph.facebook.com/{{id}}/picture" title="{{name}}"></span>
+    {{#if id}}
+    <span class="usrimg"><a target="_blank" href="http://www.facebook.com/{{id}}" ><img src="https://graph.facebook.com/{{id}}/picture" title="{{name}}"></a></span>
+    {{/if}}
   </strong>
   {{/with}}
 </template>

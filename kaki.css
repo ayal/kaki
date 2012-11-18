@@ -1,9 +1,23 @@
+@media only screen and (max-device-width: 480px) {
+    body, html, .container-fluid {
+	background: #FDB0A6;
+	overflow: auto !important;
+    }
+}
+
+@media only screen and (min-device-width: 481px) {
 /* CSS declarations go here */
-body, html, .container-fluid {
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    background: #FDB0A6;
+    body, html, .container-fluid {
+	width: 100%;
+	height: 100%;
+	overflow: hidden;
+	background: #FDB0A6;
+    }
+
+}
+
+.mobile .likethis {
+    display:none;
 }
 
 .likethis img {
@@ -60,11 +74,12 @@ body, html, .container-fluid {
     border-bottom: 1px solid black;
 }
 
+
 .muit .thetracks, .muit .lyrcont, .muit .marks, .doit .lyrcont, .doit .marks, .doit .tracks, .edit .grabit, .doit .grabit {
     display:none;
 }
 
-.muit .subtitle {
+.muit.mobile .subtitle {
     display:none !important;
 }
 
@@ -97,6 +112,11 @@ body, html, .container-fluid {
     margin-top: 10px;
 }
 
+.muit.mobile .songs {
+    height: auto !important;
+}
+
+
 .doit, .doit .vidcont{
     margin: 0px 0px 0px 0px !important;
     width: 100% !important;
@@ -115,6 +135,9 @@ body, html, .container-fluid {
     padding: 0px 0px 0px 0px !important;
     overflow: hidden;
 }
+.muit.mobile .vidcont {
+    width: 100% !important;
+}
 
 .muit .video {
     background-image: url('/jig.jpg');
@@ -122,9 +145,16 @@ body, html, .container-fluid {
     background-position: 50% 50%;
 }
 
+
+
 .muit .video iframe{
     height: 65%;
 }
+
+.muit.mobile .video iframe{
+    height: 55%;
+}
+
 
 .edit .here, .doit .here {
     display: none;
@@ -134,6 +164,12 @@ body, html, .container-fluid {
     text-align: center;
     height: 75%;
 }
+
+.muit.mobile .video {
+    text-align: center;
+    height: 65%;
+}
+
 
 .edit .video {
     height: 60%;
@@ -168,3 +204,4 @@ body, html, .container-fluid {
     font-size: 20px;
     font-weight: bold;
 }
+
