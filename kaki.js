@@ -1018,7 +1018,14 @@ if (Meteor.is_client) {
   window.lasttime = 0;
   Template.marks.events = {
     'click .alert': function() {
-      popcorn.currentTime(this.start);
+      popcorn.pause();
+      var that = this;
+      setTimeout(function(){
+        popcorn.currentTime(Math.max(that.start - 2.5,0));
+        setTimeout(function(){
+          window.popcorn.play();
+        },500);
+      },500);
     },
     'click span.badge-warning': function(e) {
       var t = prompt('edit', this.text.replace(/\n/gim, ''));
