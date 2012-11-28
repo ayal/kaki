@@ -16,14 +16,15 @@
   <div id="fb-root"></div>
   <script></script>
 
-  {{> comments}}
+
 </body>
 
-<template name="comments">
-  <div class="modal fbcomments" style="display:none">
-    <div class="fb-comments" data-href="{{url}}" data-num-posts="2" data-width="470"></div>
-  </div>
-</template>
+<!-- <template name="comments"> -->
+<!--   <div class="modal fbcomments" style="display:none"> -->
+<!--     <div class="fb-comments" data-href="{{url}}" data-num-posts="2" data-width="470"></div> -->
+<!--   </div> -->
+  
+<!-- </template> -->
 
 <template name="main">
   <div class="{{mode}} container-fluid">
@@ -119,21 +120,29 @@
       {{else}}
       <div class="alert alert-warning">
 	<strong class="">
-	  CHOOSE YOUR SONG FOR
+	  CHOOSE YOUR SONG FOR WHY? KARAOKE
 	  <a target="_blank" href="http://www.facebook.com/events/438489816218615/">
-	     WHY? KARAOKE @ OZENBAR 1.12.12! >>>> 
+	    (FB EVENT)
 	  </a>
+	  -------------- > > 
 	</strong>
       </div>
       {{/if}}
       {{/if}}
     </div>
+    {{#constant}}
+    <div id="videocon">
+    </div>
+    {{/constant}}
   </div>
   <div class="here alert alert-error" style="text-align:center">
+
+    {{#constant}}
     <div class="fb-like" data-href="http://kaki.meteor.com/muit/why/" data-send="false" data-layout="button_count" data-width="100" data-show-faces="true"></div>
     <strong class="likethis"> Like this? Hate this? Missing something? Say it >>> 
-      <a target="_blank" href="http://www.facebook.com/takashirgb"> HERE </a>
+      <a target="_blank" href="http://www.facebook.com/events/438489816218615/"> HERE </a>
     </strong>
+    {{/constant}}
   </div>
 </template>
 

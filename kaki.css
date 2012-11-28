@@ -70,6 +70,10 @@
     display:none;
 }
 
+.alert {
+    font-size: 18px;
+}
+
 .doit .grabit {
     font-size: 30px;
     text-align: center;

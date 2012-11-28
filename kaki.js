@@ -57,17 +57,20 @@ Meteor.methods({
 
   },
   saveAlbum: function(calb) {
-//    if (this.is_simulation) {
-//      return true;
-//    }
-
-    var user = Meteor.users.findOne({_id: this.userId});
-    if (!user.services.facebook || 
-        (user.services.facebook.id !== '738709464' &&
-         user.services.facebook.id !== '100001083158634')) {
-      console.log('you shall not pass', user.services.facebook ? user.services.facebook : 'no fb');
-      return false;
+    if (this.is_simulation) {
+    
     }
+    else {
+      var user = Meteor.users.findOne({_id: this.userId});
+      if (!user.services.facebook || 
+          (user.services.facebook.id !== '738709464' &&
+           user.services.facebook.id !== '100001083158634')) {
+        console.log('you shall not pass', user.services.facebook ? user.services.facebook : 'no fb');
+        return false;
+      }
+   
+    }
+
 
     
     console.log('saving..', calb.album);
@@ -107,7 +110,7 @@ if (Meteor.is_client) {
 
     window.fbAsyncInit = function(){
 
-      FB.XFBML.parse();  
+//      FB.XFBML.parse();  
       FB.init({
 	appId      : '394200583983773', // App ID
 	status     : true, // check login status
@@ -741,12 +744,6 @@ if (Meteor.is_client) {
 
   Backbone.history.start({pushState: true});
 
-  window.renderpop = function(){
-
-    window.renderpop = $.noop();
-    window.popcorn = Popcorn.smart("#video", alb.tube);
-  };
-
   window.theonez = function(){
     return dbalbums.findOne({key: window.getkey()});  
   };
@@ -769,15 +766,6 @@ if (Meteor.is_client) {
              console.log('after publish', arguments);
            });
   };
-
-  Template.comments.url = function () {
-    var x = Session.get('thekey');
-    setTimeout(function(){
-      FB && FB.XFBML.parse();
-    }, 1000);
-    return 'http://' + location.host + '/' + window.mode + '/' + window.artist + '/';
-  };
-
   Template.albums.albums = function () {
     if (!Session.get('mode')) {
       return [];
@@ -901,20 +889,46 @@ if (Meteor.is_client) {
 
   Template.video.video = function (e) {
     var xxx = dbalbums.findOne({key: window.getkey()});
+    setTimeout(function(){
+      window.spin($('.video')[0], true);
+    }, 1000);
+
     if (!xxx) {
-      setTimeout(function(){
-        window.spin($('.video')[0], true);
-      }, 0);
       return;
     }
-
+    setTimeout(function(){
+      window.spin($('.video')[0], true);
+    }, 0);
+    
     window.clearTimeout(window.repop);
 
+
+    if (window.popcorn && window.tube === xxx.tube) {
+      window.clearTimeout(window.reren);
+      window.reren = setTimeout(function(){
+        window.renderMarks();
+      }, 1500);
+      return xxx;
+    }
+
     window.repop = setTimeout(function(){
-      window.popcorn = Popcorn.smart("#video", xxx.tube);
+      $('.video iframe').remove();
+      window.popcorn = Popcorn.smart("#videocon", xxx.tube);
+      window.tube = xxx.tube;
       window.popcorn.media.addEventListener("playing", function() {
-        $('.grabit').hide();
+        if (window.mode === 'doit') {
+          $('.grabit').hide();   
+        }
       });
+
+      window.popcorn.media.addEventListener("canplaythrough", function() {
+        if (window.mode === 'muit') {
+          setTimeout(function(){
+            window.popcorn.play();   
+          },1000);
+        }
+      });
+
       window.popcorn.media.addEventListener("ended", function() {
         var loc = ($('.song.selected').next() ? 
                    $('.song.selected').next().find('a').attr('href') : 
@@ -928,8 +942,7 @@ if (Meteor.is_client) {
 	  .css('left', $('#video').offset().left);
         window.spin($('.video')[0], true);
         window.renderMarks();
-        FB.XFBML.parse();  
-        window.popcorn.play();
+//        FB.XFBML.parse();
       },1000);
 
     }, window.mode === 'edit' ? 2500 : 0);
@@ -940,12 +953,15 @@ if (Meteor.is_client) {
 
   window.renderMarks = function(){
     $('.subcont').remove();
+    window.popcorn.data.subtitles = [];
+    window.popcorn.container = undefined;
+
     var xxx = window.theonez();
     window.marks = xxx.marks || [];
     if (!xxx || !xxx.marks || !window.popcorn) {
-        return;
+      return;
     }
-
+    
     $.each(xxx.marks, function(i, mrk) {
       mrk.start = parseFloat(mrk.start);
       mrk.end = parseFloat(mrk.end);
@@ -966,7 +982,6 @@ if (Meteor.is_client) {
       return '.songs';
     }
   });
-
 
   Template.marks.marks = function () {
     var xxx = window.theonez();
@@ -1151,11 +1166,6 @@ if (Meteor.is_client) {
   };
 
   Template.main.events = {
-    'click .here' : function(e){
-      e.preventDefault();
-      $('.fbcomments').modal('show');
-      return false;
-    },
     'click #retube' : function () {
       var theone = dbalbums.findOne({key: window.getkey()});
       var newvid = prompt('enter video ID!');
