@@ -57,9 +57,9 @@ Meteor.methods({
 
   },
   saveAlbum: function(calb) {
-    if (this.is_simulation) {
-      return true;
-    }
+//    if (this.is_simulation) {
+//      return true;
+//    }
 
     var user = Meteor.users.findOne({_id: this.userId});
     if (!user.services.facebook || 
@@ -95,6 +95,7 @@ Meteor.methods({
 
 if (Meteor.is_client) {
 
+  window.marks = [];
   Meteor._reload.onMigrate(function () {
     return false;
   });
@@ -885,11 +886,12 @@ if (Meteor.is_client) {
     return it;
   };
 
+/*  Template.main.rendered = function () {
+    window.spin(this.firstNode);   
+  };*/
+
   Template.video.rendered = function () {
-    var it = window.theonez();
-    if (it) {
-      window.spin(this.firstNode);   
-    }
+    window.spin(this.firstNode);   
   };
 
   Template.songs.rendered = function () {
@@ -910,6 +912,9 @@ if (Meteor.is_client) {
 
     window.repop = setTimeout(function(){
       window.popcorn = Popcorn.smart("#video", xxx.tube);
+      window.popcorn.media.addEventListener("playing", function() {
+        $('.grabit').hide();
+      });
       window.popcorn.media.addEventListener("ended", function() {
         var loc = ($('.song.selected').next() ? 
                    $('.song.selected').next().find('a').attr('href') : 
@@ -923,15 +928,20 @@ if (Meteor.is_client) {
 	  .css('left', $('#video').offset().left);
         window.spin($('.video')[0], true);
         window.renderMarks();
+        FB.XFBML.parse();  
+        window.popcorn.play();
       },1000);
 
-    }, window.mode === 'edit' ? 5500 : 0);
+    }, window.mode === 'edit' ? 2500 : 0);
 
     return xxx;
   };
+  
 
   window.renderMarks = function(){
+    $('.subcont').remove();
     var xxx = window.theonez();
+    window.marks = xxx.marks || [];
     if (!xxx || !xxx.marks || !window.popcorn) {
         return;
     }
@@ -964,7 +974,7 @@ if (Meteor.is_client) {
       return [];
     }
 
-    window.marks = xxx.marks;
+    window.marks = xxx.marks || [];
 
     if (!xxx.marks) {
       xxx.marks = [];
@@ -1005,8 +1015,8 @@ if (Meteor.is_client) {
 
       theone.marks = $.map(theone.marks, function(x){
 	if (x.end === that.end || x.start === that.start) {
-          that.text = t;
-	  return that;
+          x.text = t;
+	  return x;
 	}
 	return x;
       });
@@ -1023,13 +1033,20 @@ if (Meteor.is_client) {
       var theone = dbalbums.findOne({key: window.getkey()});
       var that = this;
 
-      theone.marks = $.map(theone.marks, function(x){
+      var themarks = theone.marks.sort(function(a,b){return a.start - b.start;});
+
+      for(var i = 0; i < themarks.length; i++) {
+        var x = themarks[i];
 	if (x.end === that.end || x.start === that.start) {
-          that.start = (e.ctrlKey ? parseFloat(that.start)-0.25 : parseFloat(that.start)+0.25);
-	  return that;
+          var y = themarks[i - 1];
+          if (y && !e.altKey) {
+              y.end = (e.ctrlKey ? parseFloat(y.end) - 0.25 : parseFloat(y.end) + 0.25);
+          }
+          x.start = (e.ctrlKey ? parseFloat(x.start)-0.25 : parseFloat(x.start)+0.25);
 	}
-	return x;
-      });
+      };
+
+      theone.marks = themarks;
 
       Meteor.call('saveAlbum', theone,
 		  function(e, curs) {		
@@ -1041,13 +1058,20 @@ if (Meteor.is_client) {
       var theone = dbalbums.findOne({key: window.getkey()});
       var that = this;
 
-      theone.marks = $.map(theone.marks, function(x){
+      var themarks = theone.marks.sort(function(a,b){return a.start - b.start;});
+
+      for(var i = 0; i < themarks.length; i++) {
+        var x = themarks[i];
 	if (x.end === that.end || x.start === that.start) {
-          that.end = (e.ctrlKey ? parseFloat(that.end)-0.25 : parseFloat(that.end)+0.25);
-	  return that;
+          var y = themarks[i + 1];
+          if (y && !e.altKey) {
+              y.start = (e.ctrlKey ? parseFloat(y.start) - 0.25 : parseFloat(y.start) + 0.25);
+          }
+          x.end = (e.ctrlKey ? parseFloat(x.end)-0.25 : parseFloat(x.end)+0.25);
 	}
-	return x;
-      });
+      };
+
+      theone.marks = themarks;
 
       Meteor.call('saveAlbum', theone,
 		  function(e, curs) {		

@@ -5303,7 +5303,7 @@ var googleCallback;
           // the video element must have height and width defined
           style.fontSize = "18px";
           style.width = media.offsetWidth + "px";
-          style.top = position.top  + media.offsetHeight - ctxContainer.offsetHeight - 200 + "px";
+          style.top = '20%';
           style.left = position.left + "px";
 
           setTimeout( updatePosition, 10 );
@@ -8748,7 +8748,7 @@ api - https://github.com/documentcloud/document-viewer/blob/master/public/javasc
       }
 
       var media = this,
-          autoPlay = false,
+          autoPlay = true,
           container = document.createElement( "div" ),
           currentTime = 0,
           paused = true,
@@ -8978,13 +8978,16 @@ api - https://github.com/documentcloud/document-viewer/blob/master/public/javasc
           queryStringItem = params[ i ].split( "=" );
           playerVars[ queryStringItem[ 0 ] ] = queryStringItem[ 1 ];
         }
+
+        playerVars.autoplay = 1;
+        console.log(playerVars);
         
         options.youtubeObject = new YT.Player( container.id, {
+          videoId: src,
+          playerVars: {wmode: 'transparent', autoplay: 1},
           height: "100%",
           width: "100%",
           wmode: "transparent",
-          playerVars: playerVars,
-          videoId: src,
           events: {
             "onReady": function(){
 
