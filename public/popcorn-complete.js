@@ -1703,7 +1703,6 @@
       // Merge with defaults if they exist, make sure per call is prioritized
       defaults = ( this.options.defaults && this.options.defaults[ name ] ) || {};
       mergedSetupOpts = Popcorn.extend( {}, defaults, options );
-
       return pluginFn.call( this, isfn ? definition.call( this, mergedSetupOpts ) : definition,
                                   mergedSetupOpts );
     };
@@ -4291,7 +4290,6 @@
 
   // Subtitle specific functionality
   function createSubtitleContainer( context, id ) {
-
     var ctxContainer = context.container = document.createElement( "div" ),
         style = ctxContainer.style,
         media = context.media;
@@ -4313,7 +4311,6 @@
     style.textShadow = "black 2px 2px 6px";
     style.fontWeight = "bold";
     style.textAlign = "center";
-
     updatePosition();
 
     context.media.parentNode.appendChild( ctxContainer );
@@ -4364,9 +4361,7 @@
       var target,
           text,
           container = options._container = document.createElement( "div" );
-
       container.style.display = "none";
-
       if ( options.target ) {
         // Try to use supplied target
         target = Popcorn.dom.find( options.target );
@@ -4377,7 +4372,6 @@
         else if ( [ "VIDEO", "AUDIO" ].indexOf( target.nodeName ) > -1 ) {
           target = createSubtitleContainer( this, options.target + "-overlay" );
         }
-
       } else if ( !this.container ) {
         // Creates a div for all subtitles to use
         target = createSubtitleContainer( this );
@@ -5382,11 +5376,9 @@ var googleCallback;
         newdiv.id = "subtitle-" + i++;
         newdiv.className += ' subtitle';
         newdiv.style.display = "none";
-
         // Creates a div for all subtitles to use
         ( !this.container && ( !options.target || options.target === "subtitle-container" ) ) &&
           createDefaultContainer( this );
-
         // if a target is specified, use that
         if ( options.target && options.target !== "subtitle-container" ) {
           // In case the target doesn't exist in the DOM
@@ -5398,13 +5390,12 @@ var googleCallback;
 
         document.getElementById( options.container.id ) && document.getElementById( options.container.id ).appendChild( newdiv );
         options.innerContainer = newdiv;
-
         options.showSubtitle = function() {
 
           options.innerContainer.innerHTML = options.text || "";
 	    $('.subcont .selected').removeClass('selected');
 
-	    options.innerContainer.className += ' selected';
+	  options.innerContainer.className += ' selected';
 
 	    $(document).trigger('showsub', options);
         };

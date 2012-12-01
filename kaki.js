@@ -104,6 +104,23 @@ if (Meteor.is_client) {
   });
 
   Meteor.startup(function () {
+    $(document.documentElement).keyup(function (e) {
+      if (!e.ctrlKey || window.mode !== 'doit') {
+          return;
+      }
+
+      if (event.keyCode == 38) { // 
+        window.popcorn.play();
+      }
+      if (event.keyCode == 37) { // 
+        window.popcorn.currentTime(0);
+      }
+      if (event.keyCode == 39) { // 
+        window.popcorn.pause();
+        $('.tracks').removeClass().addClass('tracks').addClass('modal').modal().find('.thetracks').hide();
+      }      
+    });
+
     if (window.mobile) {
       alert('HEYA! KAKI KARAOKE from mobile is not yet AMAZING.. if it doesn\'t work now, please try from home :)');
     }
@@ -151,6 +168,17 @@ if (Meteor.is_client) {
 
   $(document).bind('showsub', function(e, opts) {
     console.log(opts);
+//    $('.subcont .selected').animate({opacity: 0.7}, (parseFloat(opts.end) - parseFloat(opts.start)) * 1000);
+    var x = $('.subcont .selected');
+
+    x.css('-webkit-transition', 'background ' + (parseFloat(opts.end) - parseFloat(opts.start)).toFixed(1) + 's');
+
+    setTimeout(function(){
+      x.css('background', 'rgba(255, 192, 203, 0.5)');
+    },0);
+      
+    
+    
     /*    setTimeout(function(){
           try {
 	  window.floor = $('.subtitle.selected').offset().top;
@@ -670,7 +698,9 @@ if (Meteor.is_client) {
     
     routes: {
       "" : "gotowhy",
-      ":what" : "gotowhy" ,
+      ":what" : "gotowhy",
+      ":what/why" : "gotowhy",
+      ":what/why/" : "gotowhy",
       ":what/:artist": "main",
       ":what/:artist/": "main",
       ":what/:artist/?:query": "main",
@@ -681,7 +711,7 @@ if (Meteor.is_client) {
       ":what/:artist/:album/:song/:vid": "main"
     },
     gotowhy: function(){
-      location.href = '/muit/why';
+      location.href = '/muit/why/elephant%20eyelash/sanddollars';
     },
     main: function(what, artist, album, song, vid) {
 
@@ -822,15 +852,18 @@ if (Meteor.is_client) {
     });
     var i = 0;
     var j = 0;
-
+    
     setTimeout(function(){
-      window.spin($('.songs')[0], true);
+      window.spin($('.tracks')[0], true);
     }, 1000);
+    
     return arr.sort(function(a,b){
-      if(a.album < b.album) return -1;
-      if(a.album > b.album) return 1;
-      return 0;
+      var x = ((a.didit ? (b.didit ? 0 : 1) : (b.didit ? -1 : 0)) ||
+        (a.who ? (b.who ? 0 : -1) : (b.who ? 1 : 0)));
+      var y = (a.song !== b.song ? (a.song > b.song ? 1 : -1) : 0);
+      return 10 * x + y;
     });
+
   };
 
   Template.songs.mode = function () {
@@ -863,9 +896,16 @@ if (Meteor.is_client) {
     if (s) {
       return s;
     }
-    $.getJSON('https://graph.facebook.com/' + id + '&callback=?', function(res){
-      Session.set(id, res);
-    });
+
+    if (/^\d+$/.test(id)) {
+      $.getJSON('https://graph.facebook.com/' + id + '&callback=?', function(res){
+        Session.set(id, res);
+      });
+    }
+    else {
+      return {name: id, id: '100000131301718'};
+      return; 
+    }
   };
 
   Template.video.isme = function(){
@@ -886,6 +926,18 @@ if (Meteor.is_client) {
     window.spin(this.firstNode);
   };
 
+  Template.songs.what = function (id) {
+    if (!id) {
+        return false;
+    }
+    if (/^\d+$/.test(id)) {
+      return id;
+    } 
+    else {
+      return '100000131301718';
+    }
+
+  };
 
   Template.video.video = function (e) {
     var xxx = dbalbums.findOne({key: window.getkey()});
@@ -916,25 +968,41 @@ if (Meteor.is_client) {
       window.popcorn = Popcorn.smart("#videocon", xxx.tube);
       window.tube = xxx.tube;
       window.popcorn.media.addEventListener("playing", function() {
-        if (window.mode === 'doit') {
-          $('.grabit').hide();   
+        if (window.mode === 'doit') {          
+          var theone = window.theonez();
+          theone.didit = 'yes';
+          Meteor.call('saveAlbum', theone,
+		      function(e, curs) {
+		        $('.grabit').hide();   
+		        console.log('saved', arguments);
+		      });
         }
       });
 
       window.popcorn.media.addEventListener("canplaythrough", function() {
         if (window.mode === 'muit') {
           setTimeout(function(){
-            window.popcorn.play();   
+            if (location.hash === '#pause') {
+              window.popcorn.pause();   
+            }
+            else {
+              window.popcorn.play();      
+            }
           },1000);
         }
       });
 
       window.popcorn.media.addEventListener("ended", function() {
-        var loc = ($('.song.selected').next() ? 
-                   $('.song.selected').next().find('a').attr('href') : 
-                   $('.song').find('a').attr('href'));
-
-        window.app_router.navigate(loc, { trigger: true });
+        if (window.mode === 'doit') {
+          $('.tracks').removeClass().addClass('tracks').addClass('modal').modal().find('.thetracks').hide();
+        }
+        else {
+          var loc = ($('.song.selected').next() ? 
+                     $('.song.selected').next().find('a').attr('href') : 
+                     $('.song').find('a').attr('href'));
+          
+          window.app_router.navigate(loc, { trigger: true });
+        }
       });
       setTimeout(function(){
 	$('#canvas').attr('width', $('#video').width()).attr('height', $('#video').height() - 50)
@@ -953,6 +1021,7 @@ if (Meteor.is_client) {
 
   window.renderMarks = function(){
     $('.subcont').remove();
+//    $('#sub-container').html('');
     window.popcorn.data.subtitles = [];
     window.popcorn.container = undefined;
 
@@ -961,11 +1030,21 @@ if (Meteor.is_client) {
     if (!xxx || !xxx.marks || !window.popcorn) {
       return;
     }
-    
+
     $.each(xxx.marks, function(i, mrk) {
       mrk.start = parseFloat(mrk.start);
       mrk.end = parseFloat(mrk.end);
       window.popcorn = popcorn.subtitle(mrk);
+      
+/*      var next = xxx.marks[i + 1];
+      if (next) {
+        var mrkc = $.extend({}, mrk);
+        mrkc.text = next.text;
+        mrkc.start-=1.5;
+        mrkc.end-=1.5;
+        mrkc.target = 'sub-container';
+        window.popcorn = popcorn.subtitle(mrkc);
+      }*/
     });
   };
   
@@ -1211,6 +1290,9 @@ if (Meteor.is_client) {
     },
     'click .song' : function(e){
       e.preventDefault();
+      if (window.mode === 'doit') {
+        $('.tracks').modal('hide');   
+      }
       window.app_router.navigate($(e.currentTarget).find('a').attr('href'), { trigger: true });
       return false;
     },
@@ -1254,7 +1336,15 @@ if (Meteor.is_client) {
     'click #drop' : function(){
       dbalbums.update({_id: window.theonez()._id}, {$set: {who: null}});
     },
-    'click #grab' : function(){
+    'click #grab' : function(e){
+      if (e.ctrlKey) {
+        var name = prompt('enter name');
+        if (name) {
+          debugger;
+          dbalbums.update({_id: window.theonez()._id}, {$set: {who: name}});
+          return;
+        }
+      }
       var currentUser = Session.get('fbuser');
 
       var grabWithUser = function(cu) {
