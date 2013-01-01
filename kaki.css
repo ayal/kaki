@@ -59,7 +59,7 @@
 
 }
 
-.doit .subtitle {
+.doit .subtitle.selected {
     display: inline-block !important;
     width: 85% !important;
 }
@@ -138,6 +138,10 @@
     width: 50px;
 }
 
+.songs .usrimg img {
+    width: 50px;
+}
+
 .muit .grabit {
     margin-top: 10px;
 }
@@ -150,7 +154,7 @@
  padding: 5px 5px 5px 5px;
 }
 .muit .songs {
-    height: 90%;
+    height: 85%;
     overflow: auto;
     margin-top: 10px;
 }
@@ -233,7 +237,7 @@
     font-size: 70px;
     color: black;
     text-border: 1px solid black;
-    background-color: pink;
+    background-color: white;
     line-height:100px;
 }
 

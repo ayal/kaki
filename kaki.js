@@ -71,8 +71,6 @@ Meteor.methods({
    
     }
 
-
-    
     console.log('saving..', calb.album);
     if (calb.marks) {
       _.each(calb.marks, function(mrk) {
@@ -108,8 +106,11 @@ if (Meteor.is_client) {
       if (!e.ctrlKey || window.mode !== 'doit') {
           return;
       }
-
+      if (event.keyCode == 40) { // 
+        window.popcorn.pause();
+      }
       if (event.keyCode == 38) { // 
+        $('.tracks').modal('hide');   
         window.popcorn.play();
       }
       if (event.keyCode == 37) { // 
@@ -171,10 +172,11 @@ if (Meteor.is_client) {
 //    $('.subcont .selected').animate({opacity: 0.7}, (parseFloat(opts.end) - parseFloat(opts.start)) * 1000);
     var x = $('.subcont .selected');
 
-    x.css('-webkit-transition', 'background ' + (parseFloat(opts.end) - parseFloat(opts.start)).toFixed(1) + 's');
-
+    x.css('-webkit-transition', 'background ' + (parseFloat(opts.end) + 0.3 - parseFloat(opts.start)).toFixed(1) + 's')
+      .css('background-image', '-webkit-linear-gradient(left, transparent 50%, white)');
+    
     setTimeout(function(){
-      x.css('background', 'rgba(255, 192, 203, 0.5)');
+      x.css('background-color', '#F05A75').css('background-image', '-webkit-linear-gradient(left, #F05A75, transparent)');
     },0);
       
     
@@ -734,6 +736,10 @@ if (Meteor.is_client) {
 
         if (window.album) {
           dolfm(window.album, artist, function(trkz) {
+            if (!trkz.album.tracks.track) {
+              Session.set('tracks', []);
+                return;
+            }
 	    trkz = trkz.album.tracks.track.length ? $.map(trkz.album.tracks.track, function(tr){
               var name = tr.name ? tr.name.toLowerCase() : tr.toLowerCase();
               name = name.replace('&', 'and');
@@ -891,7 +897,7 @@ if (Meteor.is_client) {
     return xxx.lyrics;
   };
 
-  Template.user.fbuser = function(id){
+  Template.useme.fbuser = Template.user.fbuser = function(id){
     var s = Session.get(id);
     if (s) {
       return s;
@@ -970,12 +976,10 @@ if (Meteor.is_client) {
       window.popcorn.media.addEventListener("playing", function() {
         if (window.mode === 'doit') {          
           var theone = window.theonez();
-          theone.didit = 'yes';
-          Meteor.call('saveAlbum', theone,
-		      function(e, curs) {
-		        $('.grabit').hide();   
-		        console.log('saved', arguments);
-		      });
+          dbalbums.update(theone._id, {$set: {didit: 'yes'}});
+          setTimeout(function(){
+            $('.grabit').hide();
+          },0);
         }
       });
 

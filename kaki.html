@@ -89,11 +89,9 @@
       {{else}}
       <div class="song alert alert-warning {{isthis}}"><a href="{{link}}">{{song}} ({{album}})</a>
 	{{/if}}
-	{{#with what who}}
-	{{#if this}}
-	<span class="usrimg"><img src="https://graph.facebook.com/{{this}}/picture?type=large" style="width:32px"></span>
+	{{#if who}}
+	{{> useme who}}
 	{{/if}}
-	{{/with}}
 	{{#if didit}}
 	<i class="icon-check"></i>
 	{{/if}}
@@ -158,6 +156,16 @@
     <div class="usrnm"> {{name}}</div>
     {{#if id}}
     <span class="usrimg"><a target="_blank" href="http://www.facebook.com/{{id}}" ><img src="https://graph.facebook.com/{{id}}/picture?type=large" title="{{name}}"></a></span>
+    {{/if}}
+  </strong>
+  {{/with}}
+</template>
+
+<template name="useme">
+  {{#with fbuser this}}
+  <strong>
+    {{#if id}}
+    <span class="usrimg"><img src="https://graph.facebook.com/{{id}}/picture?type=large" title="{{name}}"></span>
     {{/if}}
   </strong>
   {{/with}}
